@@ -11,7 +11,7 @@
 - ClawHub catalog sync with blocklist checking and version drift detection
 - Quarantine system with manifest tracking
 - Security posture report generation
-- Dashboard integration (optional — push scan results to getclawguard.com)
+- Dashboard integration (optional — push scan results to crustysecurity.com)
 - ClamAV auto-installer with environment detection (Docker, Raspberry Pi, standard Linux)
 - Incremental scanning support for large workspaces
 - Offline mode with graceful degradation

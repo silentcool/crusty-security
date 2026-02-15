@@ -26,8 +26,8 @@ DATA_DIR = Path(os.environ.get("CLAWGUARD_DATA_DIR", "/tmp/clawguard_data"))
 BLOCKLIST_FILE = DATA_DIR / "blocklist.json"
 CATALOG_FILE = DATA_DIR / "catalog.json"
 INSTALLED_CACHE = DATA_DIR / "installed_skills.json"
-DASHBOARD_URL = os.environ.get("CLAWGUARD_DASHBOARD_URL", "https://clawguard-rust.vercel.app")
-API_KEY = os.environ.get("CLAWGUARD_API_KEY", "")
+DASHBOARD_URL = os.environ.get("CRUSTY_DASHBOARD_URL", os.environ.get("CLAWGUARD_DASHBOARD_URL", "https://clawguard-rust.vercel.app"))
+API_KEY = os.environ.get("CRUSTY_API_KEY", os.environ.get("CLAWGUARD_API_KEY", ""))
 
 # Known malicious patterns in skill owners/slugs (seed blocklist)
 SEED_BLOCKLIST = {
@@ -246,7 +246,7 @@ def push_to_dashboard(scan_type, target, status, results, severity=None):
         "scan_type": scan_type,
         "target": target,
         "status": status,
-        "engine": "ClawGuard ClawHub Sync",
+        "engine": "Crusty Security ClawHub Sync",
         "severity": severity,
         "results": results,
     }).encode()

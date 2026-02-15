@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dashboard.sh — ClawGuard Dashboard integration
+# dashboard.sh — Crusty Security Dashboard integration
 # Sources into other scripts or call directly for heartbeats
 # 
 # Environment:
@@ -15,8 +15,9 @@
 #   bash dashboard.sh heartbeat
 #   bash dashboard.sh scan <json_file>
 
-CLAWGUARD_DASHBOARD_URL="${CLAWGUARD_DASHBOARD_URL:-https://clawguard-rust.vercel.app}"
-CLAWGUARD_API_KEY="${CLAWGUARD_API_KEY:-}"
+# Support both CRUSTY_* (primary) and CLAWGUARD_* (backwards compat)
+CLAWGUARD_DASHBOARD_URL="${CRUSTY_DASHBOARD_URL:-${CLAWGUARD_DASHBOARD_URL:-https://clawguard-rust.vercel.app}}"
+CLAWGUARD_API_KEY="${CRUSTY_API_KEY:-${CLAWGUARD_API_KEY:-}}"
 
 # Check if dashboard integration is configured
 cg_dashboard_enabled() {

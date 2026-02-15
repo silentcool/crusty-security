@@ -327,7 +327,7 @@ DASH_SEVERITY="none"
 [[ $ALERT_COUNT -gt 0 ]] && DASH_STATUS="suspicious" && DASH_SEVERITY="high"
 [[ $WARNING_COUNT -gt 0 && "$DASH_STATUS" == "clean" ]] && DASH_SEVERITY="medium"
 MONITOR_RESULTS="{\"alerts\":$ALERT_COUNT,\"warnings\":$WARNING_COUNT,\"info\":$INFO_COUNT,\"workspace\":\"$WORKSPACE\"}"
-cg_push_scan "agent_monitor" "$(hostname 2>/dev/null || echo 'agent')" "$DASH_STATUS" "ClawGuard Agent Monitor" "$DASH_SEVERITY" "$MONITOR_DURATION" "$MONITOR_RESULTS" 2>/dev/null || true
+cg_push_scan "agent_monitor" "$(hostname 2>/dev/null || echo 'agent')" "$DASH_STATUS" "Crusty Security Agent Monitor" "$DASH_SEVERITY" "$MONITOR_DURATION" "$MONITOR_RESULTS" 2>/dev/null || true
 
 # Exit code
 if [[ $ALERT_COUNT -gt 0 ]]; then

@@ -279,7 +279,7 @@ AUDIT_SEVERITY="none"
 
 FINDINGS_COUNT=$(echo "$FINDINGS" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo 0)
 AUDIT_RESULTS="{\"posture_score\":$SCORE,\"findings_count\":$FINDINGS_COUNT,\"deep_scan\":$DEEP}"
-cg_push_scan "host_audit" "$(hostname 2>/dev/null || echo 'host')" "$AUDIT_STATUS" "ClawGuard Host Audit" "$AUDIT_SEVERITY" "$AUDIT_DURATION" "$AUDIT_RESULTS" 2>/dev/null || true
+cg_push_scan "host_audit" "$(hostname 2>/dev/null || echo 'host')" "$AUDIT_STATUS" "Crusty Security Host Audit" "$AUDIT_SEVERITY" "$AUDIT_DURATION" "$AUDIT_RESULTS" 2>/dev/null || true
 
 # Exit code based on score
 if [[ $SCORE -lt 50 ]]; then

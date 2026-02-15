@@ -160,7 +160,7 @@ def check_google_safe_browsing(url, api_key):
     """Check URL against Google Safe Browsing."""
     endpoint = f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={api_key}"
     payload = {
-        "client": {"clientId": "clawguard", "clientVersion": "1.0"},
+        "client": {"clientId": "crusty", "clientVersion": "1.0"},
         "threatInfo": {
             "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
             "platformTypes": ["ANY_PLATFORM"],
@@ -277,8 +277,8 @@ def main():
 
 def _push_url_scans(urls, results):
     """Push URL scan results to ClawGuard dashboard."""
-    api_key = os.environ.get("CLAWGUARD_API_KEY", "")
-    dashboard_url = os.environ.get("CLAWGUARD_DASHBOARD_URL", "https://clawguard-rust.vercel.app")
+    api_key = os.environ.get("CRUSTY_API_KEY", os.environ.get("CLAWGUARD_API_KEY", ""))
+    dashboard_url = os.environ.get("CRUSTY_DASHBOARD_URL", os.environ.get("CLAWGUARD_DASHBOARD_URL", "https://clawguard-rust.vercel.app"))
     if not api_key:
         return
     

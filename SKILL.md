@@ -9,17 +9,17 @@ description: >
   download", "quarantine", "scan my system", "threat report", "scheduled scan",
   "audit host security", "audit this skill", "check agent integrity",
   "security report", "monitor agent".
-homepage: https://getclawguard.com
+homepage: https://crustysecurity.com
 metadata: {"openclaw":{"requires":{"bins":["bash","python3"]}}}
 ---
 
-# ClawGuard — Security & Threat Scanning
+# Crusty Security — Security & Threat Scanning
 
 ## Overview
 
-ClawGuard protects OpenClaw agents against real threats: malware in downloaded files, malicious URLs, compromised skills from ClawHub, data exfiltration, prompt injection payloads, and host-level compromise. It uses layered scanning (ClamAV → VirusTotal) and AI-agent-specific static analysis.
+Crusty Security protects OpenClaw agents against real threats: malware in downloaded files, malicious URLs, compromised skills from ClawHub, data exfiltration, prompt injection payloads, and host-level compromise. It uses layered scanning (ClamAV → VirusTotal) and AI-agent-specific static analysis.
 
-**Threat model:** The agent itself is the attack surface. Prompt injection can lead to code execution. Malicious skills run with agent privileges. ClawGuard protects both the host AND the agent's integrity.
+**Threat model:** The agent itself is the attack surface. Prompt injection can lead to code execution. Malicious skills run with agent privileges. Crusty Security protects both the host AND the agent's integrity.
 
 ## Quick Reference
 
@@ -39,11 +39,13 @@ All scripts output JSON. All scripts support `--help`. All paths are relative to
 
 ## Setup (First Run)
 
-1. Run `bash scripts/install_clamav.sh` to install and configure ClamAV
-2. Optionally set environment variables for cloud scanning:
-   - `VIRUSTOTAL_API_KEY` — free at virustotal.com (4 req/min, 500/day)
-   - `GOOGLE_SAFE_BROWSING_KEY` — free via Google Cloud Console
-3. See `references/setup.md` for detailed configuration
+Run `bash setup.sh` — that's it. ClamAV installs automatically if missing, including on first scan.
+
+Optional environment variables for cloud scanning:
+- `VIRUSTOTAL_API_KEY` — free at virustotal.com (4 req/min, 500/day)
+- `GOOGLE_SAFE_BROWSING_KEY` — free via Google Cloud Console
+
+See `references/setup.md` for detailed configuration.
 
 ## Scanning Workflows
 

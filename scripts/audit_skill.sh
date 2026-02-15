@@ -306,7 +306,7 @@ case "$RISK_SCORE" in
     medium) DASH_SEVERITY="medium" ;;
 esac
 SKILL_RESULTS="{\"risk_score\":\"$RISK_SCORE\",\"critical\":$CRITICAL_COUNT,\"high\":$HIGH_COUNT,\"medium\":$MEDIUM_COUNT,\"low\":$LOW_COUNT}"
-cg_push_scan "skill_audit" "${SKILL_DIR:-unknown}" "$DASH_STATUS" "ClawGuard Skill Audit" "$DASH_SEVERITY" "$AUDIT_DURATION" "$SKILL_RESULTS" 2>/dev/null || true
+cg_push_scan "skill_audit" "${SKILL_DIR:-unknown}" "$DASH_STATUS" "Crusty Security Skill Audit" "$DASH_SEVERITY" "$AUDIT_DURATION" "$SKILL_RESULTS" 2>/dev/null || true
 
 # Exit code
 case "$RISK_SCORE" in

@@ -1,8 +1,8 @@
-# ClawGuard Security 🛡️
+# Crusty Security 🛡️
 
 **On-host security monitoring for OpenClaw AI agents.** Scans files, URLs, and skills for malware. Monitors agent behavior for compromise indicators. Audits host security posture.
 
-[![ClawHub](https://img.shields.io/badge/ClawHub-clawguard--security-emerald)](https://clawhub.com)
+[![ClawHub](https://img.shields.io/badge/ClawHub-crusty-emerald)](https://clawhub.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
 
 ---
@@ -17,7 +17,7 @@ AI agents download files, install skills, and execute code — all with your sys
 - 🔑 **Credential theft** from exposed `.env` files and API keys
 - 🧠 **Agent hijacking** via modified SOUL.md, AGENTS.md, or MEMORY.md
 
-ClawGuard is the first security skill built specifically for the OpenClaw agent threat model.
+Crusty Security is the first security skill built specifically for the OpenClaw agent threat model.
 
 ## Features
 
@@ -38,10 +38,10 @@ ClawGuard is the first security skill built specifically for the OpenClaw agent 
 
 ```bash
 # Via ClawHub (recommended)
-clawhub install clawguard-security
+clawhub install crusty-security
 
 # Or clone directly
-git clone https://github.com/silentcool/clawguard-security.git skills/clawguard
+git clone https://github.com/silentcool/crusty-security.git skills/clawguard
 ```
 
 ### 2. Set Up ClamAV
@@ -71,7 +71,7 @@ bash scripts/audit_skill.sh /path/to/skill/
 bash scripts/host_audit.sh
 ```
 
-That's it. ClawGuard works immediately with ClamAV alone — no API keys required.
+That's it. Crusty Security works immediately with ClamAV alone — no API keys required.
 
 ## Optional: Cloud Scanning
 
@@ -85,15 +85,16 @@ export VIRUSTOTAL_API_KEY="your-key-here"
 export GOOGLE_SAFE_BROWSING_KEY="your-key-here"
 ```
 
-**Privacy note:** ClawGuard never uploads files to VirusTotal — it only sends SHA256 hashes for lookup. File upload requires explicit `--upload` flag.
+**Privacy note:** Crusty Security never uploads files to VirusTotal — it only sends SHA256 hashes for lookup. File upload requires explicit `--upload` flag.
 
 ## Optional: Dashboard
 
-Connect to [ClawGuard Dashboard](https://getclawguard.com) for centralized monitoring across multiple agents:
+Connect to [Crusty Security Dashboard](https://crustysecurity.com) for centralized monitoring across multiple agents:
 
 ```bash
-export CLAWGUARD_API_KEY="cg_live_xxxxx"
-export CLAWGUARD_DASHBOARD_URL="https://getclawguard.com"
+export CRUSTY_API_KEY="cg_live_xxxxx"
+export CRUSTY_DASHBOARD_URL="https://crustysecurity.com"
+# Backwards compatible: CLAWGUARD_API_KEY and CLAWGUARD_DASHBOARD_URL also work
 ```
 
 The dashboard provides:
@@ -239,8 +240,8 @@ python3 scripts/clawhub_sync.py --push
 |----------|---------|----------|-------------|
 | `VIRUSTOTAL_API_KEY` | — | No | VirusTotal API key for deep scanning |
 | `GOOGLE_SAFE_BROWSING_KEY` | — | No | Google Safe Browsing API key |
-| `CLAWGUARD_API_KEY` | — | No | Dashboard API key (from getclawguard.com) |
-| `CLAWGUARD_DASHBOARD_URL` | — | No | Dashboard URL |
+| `CRUSTY_API_KEY` | — | No | Dashboard API key (from crustysecurity.com) |
+| `CRUSTY_DASHBOARD_URL` | — | No | Dashboard URL |
 | `CLAWGUARD_QUARANTINE` | `/tmp/clawguard_quarantine` | No | Quarantine directory |
 | `CLAWGUARD_LOG_DIR` | `/tmp/clawguard_logs` | No | Scan log directory |
 | `CLAWGUARD_MAX_FILE_SIZE` | `200M` | No | Max file size for scanning |
@@ -273,7 +274,7 @@ clawguard/
 
 ## Offline Mode
 
-ClawGuard works fully offline with reduced capability:
+Crusty Security works fully offline with reduced capability:
 
 | Feature | Offline | Online |
 |---------|---------|--------|
@@ -287,7 +288,7 @@ ClawGuard works fully offline with reduced capability:
 
 ## Contributing
 
-Issues and PRs welcome at [github.com/silentcool/clawguard-security](https://github.com/silentcool/clawguard-security).
+Issues and PRs welcome at [github.com/silentcool/crusty-security](https://github.com/silentcool/crusty-security).
 
 ## License
 
@@ -295,7 +296,7 @@ MIT — see [LICENSE.txt](LICENSE.txt).
 
 ## Links
 
-- 🌐 **Dashboard:** [getclawguard.com](https://getclawguard.com)
-- 📦 **ClawHub:** [clawhub.com](https://clawhub.com) (search "clawguard-security")
-- 🐙 **GitHub:** [github.com/silentcool/clawguard-security](https://github.com/silentcool/clawguard-security)
+- 🌐 **Dashboard:** [crustysecurity.com](https://crustysecurity.com)
+- 📦 **ClawHub:** [clawhub.com](https://clawhub.com) (search "crusty-security")
+- 🐙 **GitHub:** [github.com/silentcool/crusty-security](https://github.com/silentcool/crusty-security)
 - 🦀 **Built by:** [Black Matter VC](https://blackmatter.vc)

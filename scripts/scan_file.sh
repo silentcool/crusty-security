@@ -61,10 +61,15 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
     exit 2
 fi
 
-# Check ClamAV
+# Check ClamAV — auto-install if missing
 if ! command -v clamscan &>/dev/null; then
-    echo '{"status":"error","message":"ClamAV not installed. Run install_clamav.sh first."}'
-    exit 2
+    echo '{"status":"installing","message":"ClamAV not found, installing automatically..."}' >&2
+    if bash "$SCRIPT_DIR/install_clamav.sh" >&2 2>&1; then
+        echo '{"status":"installed","message":"ClamAV installed successfully"}' >&2
+    else
+        echo '{"status":"error","message":"ClamAV auto-install failed. Run bash scripts/install_clamav.sh manually."}'
+        exit 2
+    fi
 fi
 
 # Ensure dirs exist

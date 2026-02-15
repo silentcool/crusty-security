@@ -35,9 +35,9 @@ for arg in "$@"; do
     esac
 done
 
-log() { echo "[clawguard] $*"; }
-warn() { echo "[clawguard] WARNING: $*" >&2; }
-die() { echo "[clawguard] ERROR: $*" >&2; exit 1; }
+log() { echo "[crusty] $*"; }
+warn() { echo "[crusty] WARNING: $*" >&2; }
+die() { echo "[crusty] ERROR: $*" >&2; exit 1; }
 
 # Check if already installed
 if command -v clamscan &>/dev/null; then

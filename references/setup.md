@@ -1,4 +1,4 @@
-# ClawGuard Setup Guide
+# Crusty Security Setup Guide
 
 ## First Run
 

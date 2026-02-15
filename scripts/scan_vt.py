@@ -245,8 +245,8 @@ def main():
 
 def _push_vt_scans(files, results):
     """Push VirusTotal scan results to dashboard."""
-    cg_key = os.environ.get("CLAWGUARD_API_KEY", "")
-    dashboard = os.environ.get("CLAWGUARD_DASHBOARD_URL", "https://clawguard-rust.vercel.app")
+    cg_key = os.environ.get("CRUSTY_API_KEY", os.environ.get("CLAWGUARD_API_KEY", ""))
+    dashboard = os.environ.get("CRUSTY_DASHBOARD_URL", os.environ.get("CLAWGUARD_DASHBOARD_URL", "https://clawguard-rust.vercel.app"))
     if not cg_key:
         return
     import threading, urllib.request, ssl
