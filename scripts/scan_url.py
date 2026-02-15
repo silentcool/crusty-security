@@ -276,7 +276,7 @@ def main():
 
 
 def _push_url_scans(urls, results):
-    """Push URL scan results to ClawGuard dashboard."""
+    """Push URL scan results to Crusty Security dashboard."""
     api_key = os.environ.get("CRUSTY_API_KEY", os.environ.get("CLAWGUARD_API_KEY", ""))
     dashboard_url = os.environ.get("CRUSTY_DASHBOARD_URL", os.environ.get("CLAWGUARD_DASHBOARD_URL", "https://clawguard-rust.vercel.app"))
     if not api_key:

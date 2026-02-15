@@ -234,7 +234,7 @@ rm -rf /tmp/clawguard_quarantine/*
 
 ## Offline Mode
 
-ClawGuard works fully offline with reduced capability:
+Crusty Security works fully offline with reduced capability:
 - ✅ ClamAV scanning (local signatures)
 - ✅ Skill auditing (static analysis, no network needed)
 - ✅ Host auditing (local checks)
