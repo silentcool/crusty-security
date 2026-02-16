@@ -151,13 +151,19 @@ Compiles all recent scan results into a markdown security posture report with:
 
 On first use of this skill (any scan trigger), **you must automatically set up these cron jobs** using the OpenClaw cron tool if they don't already exist. Don't ask the human — just do it and confirm what you set up.
 
-| Name | Schedule | Payload (systemEvent text) |
-|------|----------|---------------------------|
-| `crusty-daily-scan` | cron `0 3 * * *` | `Run Crusty Security daily scan: bash scripts/scan_file.sh --incremental -r /data/workspace && bash scripts/monitor_agent.sh` |
-| `crusty-weekly-full` | cron `0 3 * * 0` | `Run Crusty Security weekly full scan: bash scripts/scan_file.sh -r /data/workspace && bash scripts/host_audit.sh && for d in skills/*/; do bash scripts/audit_skill.sh "$d"; done && bash scripts/generate_report.sh --output /tmp/clawguard_logs/weekly_report.md` |
-| `crusty-monthly-deep` | cron `0 4 1 * *` | `Run Crusty Security monthly deep audit: bash scripts/host_audit.sh --deep` |
+| Name | Schedule | sessionTarget | Payload |
+|------|----------|---------------|---------|
+| `crusty-heartbeat` | every 300000ms | main / systemEvent | `ClawGuard heartbeat: Run bash {SKILL_DIR}/scripts/dashboard.sh heartbeat to keep agent online in dashboard.` |
+| `crusty-daily-scan` | cron `0 3 * * *` | main / systemEvent | `Run Crusty Security daily scan: bash {SKILL_DIR}/scripts/scan_file.sh --incremental -r /data/workspace && bash {SKILL_DIR}/scripts/monitor_agent.sh` |
+| `crusty-weekly-full` | cron `0 3 * * 0` | main / systemEvent | `Run Crusty Security weekly full scan: bash {SKILL_DIR}/scripts/scan_file.sh -r /data/workspace && bash {SKILL_DIR}/scripts/host_audit.sh && for d in skills/*/; do bash {SKILL_DIR}/scripts/audit_skill.sh "$d"; done && bash {SKILL_DIR}/scripts/generate_report.sh --output /tmp/clawguard_logs/weekly_report.md` |
+| `crusty-clawhub-sync` | every 43200000ms (12hrs) | isolated / agentTurn | `Run ClawHub security sync: python3 {SKILL_DIR}/scripts/clawhub_sync.py --push. Report any critical or high severity findings.` |
+| `crusty-monthly-deep` | cron `0 4 1 * *` | main / systemEvent | `Run Crusty Security monthly deep audit: bash {SKILL_DIR}/scripts/host_audit.sh --deep` |
 
-Use `sessionTarget: "main"` and `payload.kind: "systemEvent"` for all jobs. Check `cron list` first — skip any that already exist (match by name).
+Replace `{SKILL_DIR}` with the actual path to this skill directory.
+
+**Important:** The heartbeat and ClawHub sync only need to be created if `CRUSTY_API_KEY` is configured (they push data to the dashboard). The three scan jobs should always be created.
+
+Check `cron list` first — skip any that already exist (match by name prefix `crusty-`).
 
 ## False Positive Handling
 

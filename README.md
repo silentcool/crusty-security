@@ -206,12 +206,13 @@ python3 scripts/clawhub_sync.py --push
 
 Crusty Security **automatically configures recurring scans** when your OpenClaw agent first uses the skill. No manual setup needed. The agent sets up:
 
-| Frequency | What runs |
-|-----------|-----------|
-| **Daily 3am** | Incremental workspace scan + agent integrity check |
-| **Weekly Sunday 3am** | Full workspace scan + host audit + all skills audit + security report |
-| **Monthly 1st** | Deep host security audit |
-| **Every 5 min** | Dashboard heartbeat (if API key configured) |
+| Frequency | What runs | Requires Dashboard? |
+|-----------|-----------|:---:|
+| **Every 5 min** | Dashboard heartbeat (agent status) | ✅ |
+| **Daily 3am** | Incremental workspace scan + agent integrity check | ❌ |
+| **Weekly Sunday 3am** | Full workspace scan + host audit + all skills audit + security report | ❌ |
+| **Every 12 hours** | ClawHub skill inventory sync | ✅ |
+| **Monthly 1st** | Deep host security audit | ❌ |
 
 You can adjust schedules by asking your agent to modify the cron jobs.
 
