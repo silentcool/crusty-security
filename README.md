@@ -202,18 +202,18 @@ python3 scripts/clawhub_sync.py --json
 python3 scripts/clawhub_sync.py --push
 ```
 
-## Recommended Scan Schedule
+## Automatic Scan Schedule
 
-| Frequency | Scan | Purpose |
-|-----------|------|---------|
-| Every 5 min | Heartbeat | Dashboard agent status |
-| Daily | `scan_file.sh --incremental -r /data/workspace` | Catch new threats |
-| Daily | `monitor_agent.sh` | Detect behavior changes |
-| Weekly | `scan_file.sh -r /data/workspace` | Full scan |
-| Weekly | `host_audit.sh` | Host posture check |
-| Weekly | Audit all skills | Supply chain monitoring |
-| 12 hours | `clawhub_sync.py --push` | ClawHub catalog sync |
-| Monthly | `host_audit.sh --deep` | Deep system audit |
+Crusty Security **automatically configures recurring scans** when your OpenClaw agent first uses the skill. No manual setup needed. The agent sets up:
+
+| Frequency | What runs |
+|-----------|-----------|
+| **Daily 3am** | Incremental workspace scan + agent integrity check |
+| **Weekly Sunday 3am** | Full workspace scan + host audit + all skills audit + security report |
+| **Monthly 1st** | Deep host security audit |
+| **Every 5 min** | Dashboard heartbeat (if API key configured) |
+
+You can adjust schedules by asking your agent to modify the cron jobs.
 
 ## Requirements
 

@@ -147,19 +147,17 @@ Compiles all recent scan results into a markdown security posture report with:
 - Security posture score with emoji indicators
 - Recommendations (missing tools, scan schedules)
 
-## Scheduled Scanning
+## Automatic Scheduled Scanning
 
-Set up recurring scans using OpenClaw cron:
+On first use of this skill (any scan trigger), **you must automatically set up these cron jobs** using the OpenClaw cron tool if they don't already exist. Don't ask the human — just do it and confirm what you set up.
 
-| Schedule | What | Command |
-|----------|------|---------|
-| Daily 3am | Workspace scan (incremental) | `bash scripts/scan_file.sh --incremental -r /data/workspace` |
-| Weekly Sunday 3am | Full workspace scan | `bash scripts/scan_file.sh -r /data/workspace` |
-| Daily | Agent integrity check | `bash scripts/monitor_agent.sh` |
-| Weekly | Host audit | `bash scripts/host_audit.sh` |
-| Monthly | Deep host audit | `bash scripts/host_audit.sh --deep` |
-| Weekly | All skills audit | `for d in skills/*/; do bash scripts/audit_skill.sh "$d"; done` |
-| Weekly | Security report | `bash scripts/generate_report.sh --output /tmp/clawguard_logs/weekly_report.md` |
+| Name | Schedule | Payload (systemEvent text) |
+|------|----------|---------------------------|
+| `crusty-daily-scan` | cron `0 3 * * *` | `Run Crusty Security daily scan: bash scripts/scan_file.sh --incremental -r /data/workspace && bash scripts/monitor_agent.sh` |
+| `crusty-weekly-full` | cron `0 3 * * 0` | `Run Crusty Security weekly full scan: bash scripts/scan_file.sh -r /data/workspace && bash scripts/host_audit.sh && for d in skills/*/; do bash scripts/audit_skill.sh "$d"; done && bash scripts/generate_report.sh --output /tmp/clawguard_logs/weekly_report.md` |
+| `crusty-monthly-deep` | cron `0 4 1 * *` | `Run Crusty Security monthly deep audit: bash scripts/host_audit.sh --deep` |
+
+Use `sessionTarget: "main"` and `payload.kind: "systemEvent"` for all jobs. Check `cron list` first — skip any that already exist (match by name).
 
 ## False Positive Handling
 
