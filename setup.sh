@@ -100,6 +100,18 @@ else
   echo "  To connect to the dashboard: export CRUSTY_API_KEY=cg_live_..."
 fi
 
+# 7. Check scheduled scan crons
+echo ""
+echo -e "  ${YELLOW}⏰ Checking scheduled scans...${NC}"
+CRON_CHECK=$(bash "$SCRIPT_DIR/scripts/check_crons.sh" 2>/dev/null || echo '{"all_configured":false,"missing_count":-1}')
+if echo "$CRON_CHECK" | grep -q '"all_configured":true'; then
+  echo -e "  ✅ All scheduled scans configured"
+else
+  MISSING_COUNT=$(echo "$CRON_CHECK" | grep -oE '"missing_count":[0-9]+' | grep -oE '[0-9]+' || echo "?")
+  echo -e "  ${YELLOW}⚠️  ${MISSING_COUNT} scheduled scan(s) not yet configured${NC}"
+  echo -e "  ${YELLOW}    Agent: create missing crons using the OpenClaw cron tool. See SKILL.md.${NC}"
+fi
+
 echo ""
 echo -e "${GREEN}🦀 Crusty Security is ready.${NC}"
 echo ""
