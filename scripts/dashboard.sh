@@ -16,7 +16,7 @@
 #   bash dashboard.sh scan <json_file>
 
 # Support both CRUSTY_* (primary) and CLAWGUARD_* (backwards compat)
-CLAWGUARD_DASHBOARD_URL="${CRUSTY_DASHBOARD_URL:-${CLAWGUARD_DASHBOARD_URL:-https://clawguard-rust.vercel.app}}"
+CLAWGUARD_DASHBOARD_URL="${CRUSTY_DASHBOARD_URL:-${CLAWGUARD_DASHBOARD_URL:-https://crustysecurity.com}}"
 CLAWGUARD_API_KEY="${CRUSTY_API_KEY:-${CLAWGUARD_API_KEY:-}}"
 
 # Check if dashboard integration is configured

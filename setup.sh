@@ -63,6 +63,43 @@ else
   echo -e "  ${YELLOW}⚠️  Scanner returned unexpected result (ClamAV may still be updating signatures)${NC}"
 fi
 
+# 6. Dashboard integration — auto-register on first install
+if [[ -n "${CRUSTY_API_KEY:-}" ]]; then
+  CLAWGUARD_DASHBOARD_URL="${CLAWGUARD_DASHBOARD_URL:-https://crustysecurity.com}"
+  export CRUSTY_API_KEY CLAWGUARD_DASHBOARD_URL CLAWGUARD_API_KEY="${CRUSTY_API_KEY}"
+  echo -e "  ${YELLOW}📡 Dashboard integration detected — registering agent...${NC}"
+
+  # Send initial heartbeat (populates hostname, OS, architecture, OpenClaw version)
+  if bash "$SCRIPT_DIR/scripts/dashboard.sh" heartbeat >/dev/null 2>&1; then
+    echo -e "  ✅ Heartbeat sent — agent registered in dashboard"
+  else
+    echo -e "  ${YELLOW}⚠️  Heartbeat failed (dashboard may be unreachable)${NC}"
+  fi
+
+  # Run initial host audit (populates posture score + first scan)
+  echo -e "  ${YELLOW}🔍 Running initial host security audit...${NC}"
+  if bash "$SCRIPT_DIR/scripts/host_audit.sh" >/dev/null 2>&1; then
+    echo -e "  ✅ Host audit complete — results pushed to dashboard"
+  else
+    echo -e "  ${YELLOW}⚠️  Host audit completed with warnings${NC}"
+  fi
+
+  # Run initial workspace scan (populates scan history)
+  echo -e "  ${YELLOW}🔍 Running initial workspace scan...${NC}"
+  if bash "$SCRIPT_DIR/scripts/scan_file.sh" -r "${CLAWGUARD_SCAN_DIR:-/data/workspace}" >/dev/null 2>&1; then
+    echo -e "  ✅ Workspace scan complete — results pushed to dashboard"
+  else
+    echo -e "  ${YELLOW}⚠️  Workspace scan completed with warnings${NC}"
+  fi
+
+  echo ""
+  echo -e "  ${GREEN}📊 Dashboard: ${CLAWGUARD_DASHBOARD_URL}/dashboard${NC}"
+else
+  echo ""
+  echo -e "  ${YELLOW}ℹ️  No CRUSTY_API_KEY set — running in local-only mode${NC}"
+  echo "  To connect to the dashboard: export CRUSTY_API_KEY=cg_live_..."
+fi
+
 echo ""
 echo -e "${GREEN}🦀 Crusty Security is ready.${NC}"
 echo ""
@@ -70,6 +107,4 @@ echo "  Scan a file:     bash scripts/scan_file.sh /path/to/file"
 echo "  Scan workspace:  bash scripts/scan_file.sh -r /data/workspace"
 echo "  Audit a skill:   bash scripts/audit_skill.sh /path/to/skill/"
 echo "  Host audit:      bash scripts/host_audit.sh"
-echo ""
-echo "  Optional: Set CRUSTY_API_KEY and CRUSTY_DASHBOARD_URL for dashboard integration."
 echo ""
