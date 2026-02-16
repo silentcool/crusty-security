@@ -136,7 +136,8 @@ def get_installed_skills():
                                     break
 
             if not version:
-                version = "local"
+                # Bundled OpenClaw skills have no version — managed by OpenClaw itself
+                version = "bundled" if str(skills_root) == "/openclaw/skills" else "local"
 
             # Hash all files for integrity checking
             file_hashes = {}
@@ -218,9 +219,9 @@ def check_skill_security(skill, catalog, blocklist, installed_hashes):
                 "message": f"Low reputation: {stats.get('downloads', 0)} downloads, 0 stars"
             })
 
-        # Check version drift
+        # Check version drift (skip bundled/local — no meaningful version to compare)
         latest_version = catalog_entry.get("tags", {}).get("latest", "")
-        if latest_version and skill.get("version") and skill["version"] != latest_version and skill["version"] != "local":
+        if latest_version and skill.get("version") and skill["version"] not in ("local", "bundled", latest_version):
             issues.append({
                 "severity": "medium",
                 "type": "version_drift",
