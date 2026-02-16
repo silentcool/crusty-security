@@ -97,11 +97,20 @@ cg_push_heartbeat() {
     fi
 
     local uptime_secs
-    uptime_secs=$(cat /proc/uptime 2>/dev/null | awk '{print int($1)}' || echo 0)
-
-    local mem_total mem_avail
-    mem_total=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || echo 0)
-    mem_avail=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}' || echo 0)
+    if [[ "$(uname)" == "Darwin" ]]; then
+        uptime_secs=$(sysctl -n kern.boottime 2>/dev/null | awk -F'[= ,]' '{for(i=1;i<=NF;i++) if($i=="sec") print $(i+1)}' | head -1 || echo 0)
+        if [[ "$uptime_secs" -gt 0 ]] 2>/dev/null; then
+            uptime_secs=$(( $(date +%s) - uptime_secs ))
+        fi
+        local mem_total mem_avail
+        mem_total=$(sysctl -n hw.memsize 2>/dev/null | awk '{print int($1/1024)}' || echo 0)
+        mem_avail=$(vm_stat 2>/dev/null | awk '/Pages free/ {gsub(/\./,"",$3); print int($3*4)}' || echo 0)
+    else
+        uptime_secs=$(cat /proc/uptime 2>/dev/null | awk '{print int($1)}' || echo 0)
+        local mem_total mem_avail
+        mem_total=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || echo 0)
+        mem_avail=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}' || echo 0)
+    fi
 
     local payload
     payload=$(cat <<EOJSON
