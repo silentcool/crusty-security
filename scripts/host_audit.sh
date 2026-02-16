@@ -401,7 +401,8 @@ cat <<EOF
 EOF
 
 # Push to dashboard
-AUDIT_DURATION=$(($(get_ms) - AUDIT_START_MS))
+AUDIT_DURATION=$(($(get_ms) - ${AUDIT_START_MS:-0}))
+[[ "$AUDIT_DURATION" =~ ^[0-9]+$ ]] || AUDIT_DURATION=0
 AUDIT_STATUS="clean"
 AUDIT_SEVERITY="none"
 [[ $SCORE -lt 50 ]] && AUDIT_STATUS="suspicious" && AUDIT_SEVERITY="high"

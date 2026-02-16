@@ -12,6 +12,23 @@ NC='\033[0m'
 echo -e "${GREEN}🦀 Crusty Security — Setup${NC}"
 echo ""
 
+# Auto-detect workspace
+SCAN_DIR="${CLAWGUARD_WORKSPACE:-}"
+[[ -z "$SCAN_DIR" && -d "/data/workspace" ]] && SCAN_DIR="/data/workspace"
+[[ -z "$SCAN_DIR" && -d "$HOME/clawd" ]] && SCAN_DIR="$HOME/clawd"
+[[ -z "$SCAN_DIR" && -d "$HOME/.openclaw" ]] && SCAN_DIR="$HOME/.openclaw"
+[[ -z "$SCAN_DIR" ]] && SCAN_DIR="$HOME"
+
+# Auto-detect skills directory
+SKILLS_DIR=""
+[[ -d "/data/workspace/skills" ]] && SKILLS_DIR="/data/workspace/skills"
+[[ -z "$SKILLS_DIR" && -d "$HOME/.openclaw/skills" ]] && SKILLS_DIR="$HOME/.openclaw/skills"
+[[ -z "$SKILLS_DIR" && -d "$HOME/clawd/skills" ]] && SKILLS_DIR="$HOME/clawd/skills"
+
+echo -e "  📁 Workspace: $SCAN_DIR"
+[[ -n "$SKILLS_DIR" ]] && echo -e "  📁 Skills: $SKILLS_DIR"
+echo ""
+
 # 1. Check Python 3
 if command -v python3 &>/dev/null; then
   echo -e "  ✅ Python 3 found ($(python3 --version 2>&1 | awk '{print $2}'))"
@@ -43,6 +60,12 @@ if [[ "$(uname)" == "Darwin" ]]; then
       echo -e "  ✅ freshclam.conf fixed ($prefix)"
     fi
   done
+
+  # Update signatures if freshclam is available
+  if command -v freshclam &>/dev/null; then
+    echo -e "  ${YELLOW}🔄 Updating ClamAV signatures...${NC}"
+    freshclam --quiet 2>/dev/null && echo -e "  ✅ Signatures updated" || echo -e "  ${YELLOW}⚠️  Signature update failed (may need sudo)${NC}"
+  fi
 fi
 
 # 3. Ensure scripts are executable
@@ -67,34 +90,79 @@ fi
 if [[ -n "${CRUSTY_API_KEY:-}" ]]; then
   CLAWGUARD_DASHBOARD_URL="${CLAWGUARD_DASHBOARD_URL:-https://crustysecurity.com}"
   export CRUSTY_API_KEY CLAWGUARD_DASHBOARD_URL CLAWGUARD_API_KEY="${CRUSTY_API_KEY}"
+  echo ""
   echo -e "  ${YELLOW}📡 Dashboard integration detected — registering agent...${NC}"
 
   # Send initial heartbeat (populates hostname, OS, architecture, OpenClaw version)
-  if bash "$SCRIPT_DIR/scripts/dashboard.sh" heartbeat >/dev/null 2>&1; then
+  if bash "$SCRIPT_DIR/scripts/dashboard.sh" heartbeat 2>/dev/null; then
     echo -e "  ✅ Heartbeat sent — agent registered in dashboard"
   else
     echo -e "  ${YELLOW}⚠️  Heartbeat failed (dashboard may be unreachable)${NC}"
   fi
 
-  # Run initial host audit (populates posture score + first scan)
+  # Run initial host audit
   echo -e "  ${YELLOW}🔍 Running initial host security audit...${NC}"
-  if bash "$SCRIPT_DIR/scripts/host_audit.sh" >/dev/null 2>&1; then
+  if bash "$SCRIPT_DIR/scripts/host_audit.sh" 2>/dev/null; then
     echo -e "  ✅ Host audit complete — results pushed to dashboard"
   else
-    echo -e "  ${YELLOW}⚠️  Host audit completed with warnings${NC}"
+    echo -e "  ${YELLOW}⚠️  Host audit completed with errors${NC}"
   fi
 
-  # Run initial workspace scan (populates scan history)
-  echo -e "  ${YELLOW}🔍 Running initial workspace scan...${NC}"
-  if bash "$SCRIPT_DIR/scripts/scan_file.sh" -r "${CLAWGUARD_SCAN_DIR:-/data/workspace}" >/dev/null 2>&1; then
+  # Run initial workspace scan
+  echo -e "  ${YELLOW}🔍 Running initial workspace scan ($SCAN_DIR)...${NC}"
+  if bash "$SCRIPT_DIR/scripts/scan_file.sh" -r "$SCAN_DIR" 2>/dev/null; then
     echo -e "  ✅ Workspace scan complete — results pushed to dashboard"
   else
-    echo -e "  ${YELLOW}⚠️  Workspace scan completed with warnings${NC}"
+    echo -e "  ${YELLOW}⚠️  Workspace scan completed with errors${NC}"
+  fi
+
+  # Run agent integrity monitor (baseline)
+  echo -e "  ${YELLOW}🔍 Running agent integrity monitor...${NC}"
+  if bash "$SCRIPT_DIR/scripts/monitor_agent.sh" 2>/dev/null; then
+    echo -e "  ✅ Agent monitor complete"
+  else
+    echo -e "  ${YELLOW}⚠️  Agent monitor completed with warnings${NC}"
+  fi
+
+  # Audit installed skills
+  if [[ -n "$SKILLS_DIR" && -d "$SKILLS_DIR" ]]; then
+    echo -e "  ${YELLOW}🔍 Auditing installed skills...${NC}"
+    SKILL_COUNT=0
+    for skill_dir in "$SKILLS_DIR"/*/; do
+      [[ -d "$skill_dir" ]] && bash "$SCRIPT_DIR/scripts/audit_skill.sh" "$skill_dir" >/dev/null 2>&1 && ((SKILL_COUNT++)) || true
+    done
+    echo -e "  ✅ Audited $SKILL_COUNT skills"
+  fi
+
+  # Sync skill inventory to dashboard
+  if [[ -f "$SCRIPT_DIR/scripts/clawhub_sync.py" ]]; then
+    echo -e "  ${YELLOW}📡 Syncing skill inventory to dashboard...${NC}"
+    if python3 "$SCRIPT_DIR/scripts/clawhub_sync.py" --push 2>/dev/null; then
+      echo -e "  ✅ Skill inventory synced"
+    else
+      echo -e "  ${YELLOW}⚠️  Skill sync failed (non-critical)${NC}"
+    fi
   fi
 
   echo ""
   echo -e "  ${GREEN}📊 Dashboard: ${CLAWGUARD_DASHBOARD_URL}/dashboard${NC}"
 else
+  # No API key — still run local scans
+  echo ""
+  echo -e "  ${YELLOW}🔍 Running initial host security audit...${NC}"
+  if bash "$SCRIPT_DIR/scripts/host_audit.sh" 2>/dev/null; then
+    echo -e "  ✅ Host audit complete"
+  else
+    echo -e "  ${YELLOW}⚠️  Host audit completed with errors${NC}"
+  fi
+
+  echo -e "  ${YELLOW}🔍 Running initial workspace scan ($SCAN_DIR)...${NC}"
+  if bash "$SCRIPT_DIR/scripts/scan_file.sh" -r "$SCAN_DIR" 2>/dev/null; then
+    echo -e "  ✅ Workspace scan complete"
+  else
+    echo -e "  ${YELLOW}⚠️  Workspace scan completed with errors${NC}"
+  fi
+
   echo ""
   echo -e "  ${YELLOW}ℹ️  No CRUSTY_API_KEY set — running in local-only mode${NC}"
   echo "  To connect to the dashboard: export CRUSTY_API_KEY=cg_live_..."
@@ -116,7 +184,7 @@ echo ""
 echo -e "${GREEN}🦀 Crusty Security is ready.${NC}"
 echo ""
 echo "  Scan a file:     bash scripts/scan_file.sh /path/to/file"
-echo "  Scan workspace:  bash scripts/scan_file.sh -r /data/workspace"
+echo "  Scan workspace:  bash scripts/scan_file.sh -r $SCAN_DIR"
 echo "  Audit a skill:   bash scripts/audit_skill.sh /path/to/skill/"
 echo "  Host audit:      bash scripts/host_audit.sh"
 echo ""
