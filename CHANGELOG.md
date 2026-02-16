@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.2] — 2026-02-16
+
+### Fixed
+- **CRITICAL: All cron jobs now use `isolated` / `agentTurn` instead of `main` / `systemEvent`.** The previous `systemEvent` pattern silently failed — it injected text into the main session but the agent didn't reliably execute commands, especially when environment variables (like `CRUSTY_API_KEY`) weren't sourced. This caused heartbeats, scans, and syncs to appear "ok" in cron status while never actually running.
+- Heartbeat and sync cron payloads now explicitly source shell profiles (`~/.zshrc`, `~/.bashrc`) to ensure API keys are available in isolated sessions
+- Added prominent warning in SKILL.md explaining when to use `agentTurn` vs `systemEvent`
+- `check_crons.sh` now prints session type guidance when missing crons are detected
+- README.md updated with cron best practices for OpenClaw agents
+
 ## [1.2.1] — 2026-02-16
 
 ### Fixed

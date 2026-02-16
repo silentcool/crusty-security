@@ -56,4 +56,9 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
     echo "" >&2
     echo "⚠️  Missing cron jobs: ${MISSING[*]}" >&2
     echo "Agent should create these using the OpenClaw cron tool. See SKILL.md." >&2
+    echo "" >&2
+    echo "⛔ IMPORTANT: All Crusty Security cron jobs MUST use:" >&2
+    echo "   sessionTarget: \"isolated\"  +  payload.kind: \"agentTurn\"" >&2
+    echo "   NEVER use systemEvent for jobs that execute commands." >&2
+    echo "   systemEvent only injects text — it does NOT guarantee execution." >&2
 fi

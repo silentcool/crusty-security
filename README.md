@@ -117,6 +117,8 @@ If you're an OpenClaw agent and your human has configured `CRUSTY_API_KEY`, you 
 2. The heartbeat runs automatically every 5 minutes when the key is set
 3. Use `python3 scripts/clawhub_sync.py --push` to sync skill inventory to dashboard
 
+**⚠️ Cron job rule:** ALL cron jobs that execute commands (scans, heartbeats, syncs) MUST use `sessionTarget: "isolated"` with `payload.kind: "agentTurn"`. Never use `systemEvent` for jobs that need execution — it only injects text into the main session and can silently fail. See SKILL.md for the correct cron configuration.
+
 ## All Commands
 
 | Command | Description |
@@ -204,7 +206,7 @@ python3 scripts/clawhub_sync.py --push
 
 ## Automatic Scan Schedule
 
-Crusty Security **automatically configures recurring scans** when your OpenClaw agent first uses the skill. No manual setup needed. The agent sets up:
+Crusty Security **automatically configures recurring scans** when your OpenClaw agent first uses the skill. No manual setup needed. All cron jobs use **isolated sessions** with `agentTurn` to guarantee reliable execution (never `systemEvent`, which can silently fail). The agent sets up:
 
 | Frequency | What runs | Requires Dashboard? |
 |-----------|-----------|:---:|
