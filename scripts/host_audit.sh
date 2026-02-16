@@ -138,6 +138,18 @@ check_cron() {
     fi
 }
 
+# User-defined port allowlist (comma-separated)
+# e.g. CRUSTY_ALLOWED_PORTS=9090,4000
+_port_allowed() {
+    local p="$1"
+    [[ -z "${CRUSTY_ALLOWED_PORTS:-}" ]] && return 1
+    IFS=',' read -ra _allowed <<< "$CRUSTY_ALLOWED_PORTS"
+    for _a in "${_allowed[@]}"; do
+        [[ "$p" == "$_a" ]] && return 0
+    done
+    return 1
+}
+
 # 2. Unexpected listening ports
 check_ports() {
     local suspicious=""
@@ -151,9 +163,9 @@ check_ports() {
                 local port
                 port=$(echo "$line" | awk '{print $9}' | grep -oE '[0-9]+$' || true)
                 case "$port" in
-                    22|80|443|8080|8443|3000|5432|3306|6379|53|25|587|993|995|8330|"") ;;
+                    22|80|443|8080|8443|3000|5432|3306|6379|53|25|587|993|995|8330|18789|3334|"") ;;
                     *)
-                        if [[ -n "$port" ]]; then
+                        if [[ -n "$port" ]] && ! _port_allowed "$port"; then
                             suspicious+="$line\n"
                         fi
                         ;;
@@ -173,9 +185,9 @@ check_ports() {
                 local port
                 port=$(echo "$line" | awk '{print $4}' | grep -oE '[0-9]+$' || true)
                 case "$port" in
-                    22|80|443|8080|8443|3000|5432|3306|6379|53|25|587|993|995|8330|"") ;;
+                    22|80|443|8080|8443|3000|5432|3306|6379|53|25|587|993|995|8330|18789|3334|"") ;;
                     *)
-                        if [[ -n "$port" ]]; then
+                        if [[ -n "$port" ]] && ! _port_allowed "$port"; then
                             suspicious+="$line\n"
                         fi
                         ;;
@@ -258,7 +270,8 @@ check_permissions() {
             perms=$(stat -c "%a" "$f" 2>/dev/null || stat -f "%Lp" "$f" 2>/dev/null || true)
             if [[ -n "$perms" ]]; then
                 local other=$((perms % 10))
-                if [[ $other -ge 2 ]]; then
+                # Write bit = 2. Check if bit 1 (write) is set: 2,3,6,7
+                if (( other & 2 )); then
                     issues+="$f is world-writable (perms: $perms)\n"
                 fi
             fi
@@ -399,8 +412,6 @@ AUDIT_RESULTS="{\"posture_score\":$SCORE,\"findings_count\":$FINDINGS_COUNT,\"de
 cg_push_scan "host_audit" "$(hostname 2>/dev/null || echo 'host')" "$AUDIT_STATUS" "Crusty Security Host Audit" "$AUDIT_SEVERITY" "$AUDIT_DURATION" "$AUDIT_RESULTS" 2>/dev/null || true
 
 # Exit code based on score
-if [[ $SCORE -lt 50 ]]; then
-    exit 1
-else
-    exit 0
-fi
+# Exit 0 = script ran successfully (use JSON posture_score for severity)
+# Exit 1 reserved for runtime/execution errors only
+exit 0

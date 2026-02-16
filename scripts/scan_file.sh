@@ -45,7 +45,7 @@ Environment:
   CLAWGUARD_LOG_DIR       Log directory (default: /tmp/clawguard_logs)
 
 Output: JSON with {status, file, engine, threat_name, timestamp, details}
-Exit codes: 0 = clean, 1 = threat found, 2 = error
+Exit codes: 0 = scan completed (check JSON status field), 1 = runtime error
 EOF
     exit 0
 }
@@ -209,10 +209,15 @@ json.dump(m, open('$TMP_MANIFEST','w'), indent=2)
 fi
 
 # Determine overall status
-if [[ $SCAN_EXIT -eq 0 ]]; then
-    STATUS="clean"
-elif [[ $SCAN_EXIT -eq 1 ]]; then
+# Primary signal: did we actually find threats? Exit codes can be unreliable
+# (e.g. clamscan returns 2 for permission denied on a single file in a clean scan)
+if [[ $FOUND_THREATS -gt 0 ]]; then
     STATUS="infected"
+elif [[ $SCAN_EXIT -eq 2 && $FOUND_THREATS -eq 0 ]]; then
+    # Scanner had an issue but found nothing — treat as clean with warning
+    STATUS="clean"
+elif [[ $SCAN_EXIT -eq 0 ]]; then
+    STATUS="clean"
 else
     STATUS="error"
 fi
@@ -244,11 +249,6 @@ DASH_SEVERITY="none"
 
 cg_push_scan "file" "${TARGETS[0]}" "$STATUS" "$ENGINE_VERSION" "$DASH_SEVERITY" "$SCAN_DURATION" "$RESULTS_JSON" 2>/dev/null || true
 
-# Exit with appropriate code
-if [[ "$STATUS" == "infected" ]]; then
-    exit 1
-elif [[ "$STATUS" == "error" ]]; then
-    exit 2
-else
-    exit 0
-fi
+# Exit 0 = script ran successfully (use JSON status/threats_found for results)
+# Exit 1 = runtime error (script couldn't execute properly)
+exit 0

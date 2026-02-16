@@ -29,6 +29,22 @@ else
   echo -e "  ✅ ClamAV installed"
 fi
 
+# 2b. Fix freshclam config on macOS (Homebrew leaves example config that blocks freshclam)
+if [[ "$(uname)" == "Darwin" ]]; then
+  for prefix in /opt/homebrew /usr/local; do
+    SAMPLE="$prefix/etc/clamav/freshclam.conf.sample"
+    CONF="$prefix/etc/clamav/freshclam.conf"
+    if [[ -f "$SAMPLE" && ! -f "$CONF" ]]; then
+      cp "$SAMPLE" "$CONF"
+      sed -i '' 's/^Example/#Example/' "$CONF" 2>/dev/null || true
+      echo -e "  ✅ freshclam.conf configured ($prefix)"
+    elif [[ -f "$CONF" ]] && grep -q "^Example" "$CONF" 2>/dev/null; then
+      sed -i '' 's/^Example/#Example/' "$CONF" 2>/dev/null || true
+      echo -e "  ✅ freshclam.conf fixed ($prefix)"
+    fi
+  done
+fi
+
 # 3. Ensure scripts are executable
 chmod +x "$SCRIPT_DIR"/scripts/*.sh "$SCRIPT_DIR"/scripts/*.py 2>/dev/null || true
 echo -e "  ✅ Scripts ready"

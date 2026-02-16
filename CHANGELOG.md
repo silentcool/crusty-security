@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.1] — 2026-02-16
+
+### Fixed
+- **Bug:** False positive on file permissions — 644 was flagged as "world-writable" (now correctly checks write bit)
+- **Bug:** scan_file.sh returned `"status": "error"` for clean files on macOS (clamscan exit code 2 on benign permission issues)
+- Exit codes now follow sane convention: 0 = script ran (check JSON for results), 1 = runtime error
+- Added OpenClaw ports (18789, 3334) to default port allowlist
+- Added `CRUSTY_ALLOWED_PORTS` env var for user-defined port allowlists
+- freshclam.conf auto-configured on macOS during setup (fixes Homebrew Example line blocker)
+
 ## [1.2.0] — 2026-02-16
 
 ### Added
