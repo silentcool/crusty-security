@@ -4,6 +4,15 @@ set -euo pipefail
 # scan_file.sh — Scan files/directories for malware using ClamAV
 # Outputs JSON results
 
+# Cross-platform millisecond timestamp (macOS date doesn't support %N)
+get_ms() {
+  if [[ "$OSTYPE" == darwin* ]]; then
+    python3 -c "import time; print(int(time.time()*1000))"
+  else
+    date +%s%3N
+  fi
+}
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/dashboard.sh" 2>/dev/null || true
 QUARANTINE_DIR="${CLAWGUARD_QUARANTINE:-/tmp/clawguard_quarantine}"
@@ -151,7 +160,7 @@ scan_targets() {
     return $exit_code
 }
 
-SCAN_START_MS=$(date +%s%3N)
+SCAN_START_MS=$(get_ms)
 SCAN_EXIT=0
 scan_targets || SCAN_EXIT=$?
 
@@ -227,7 +236,7 @@ EOF
 
 # Push to dashboard
 TARGETS_JSON=$(printf '%s\n' "${TARGETS[@]}" | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin]))" 2>/dev/null || echo '[]')
-SCAN_DURATION=$(($(date +%s%3N) - ${SCAN_START_MS:-$(date +%s%3N)}))
+SCAN_DURATION=$(($(get_ms) - ${SCAN_START_MS:-$(get_ms)}))
 RESULTS_JSON="{\"engine\":\"$ENGINE_VERSION\",\"scanner\":\"$SCANNER\",\"threats_found\":$FOUND_THREATS,\"action\":\"$ACTION\",\"incremental\":$INCREMENTAL}"
 
 DASH_SEVERITY="none"

@@ -6,7 +6,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/dashboard.sh" 2>/dev/null || true
-AUDIT_START_MS=$(date +%s%3N)
+
+# Cross-platform millisecond timestamp (macOS date doesn't support %N)
+get_ms() {
+  if [[ "$OSTYPE" == darwin* ]]; then
+    python3 -c "import time; print(int(time.time()*1000))"
+  else
+    date +%s%3N
+  fi
+}
+AUDIT_START_MS=$(get_ms)
 
 show_help() {
     cat <<'EOF'
@@ -297,7 +306,7 @@ cat <<EOF
 EOF
 
 # Push to dashboard
-AUDIT_DURATION=$(($(date +%s%3N) - AUDIT_START_MS))
+AUDIT_DURATION=$(($(get_ms) - AUDIT_START_MS))
 DASH_STATUS="clean"
 DASH_SEVERITY="none"
 case "$RISK_SCORE" in

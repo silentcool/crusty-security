@@ -6,7 +6,16 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/dashboard.sh" 2>/dev/null || true
-AUDIT_START_MS=$(date +%s%3N)
+
+# Cross-platform millisecond timestamp (macOS date doesn't support %N)
+get_ms() {
+  if [[ "$OSTYPE" == darwin* ]]; then
+    python3 -c "import time; print(int(time.time()*1000))"
+  else
+    date +%s%3N
+  fi
+}
+AUDIT_START_MS=$(get_ms)
 
 show_help() {
     cat <<'EOF'
@@ -67,62 +76,116 @@ json.dump(f, sys.stdout)
 " 2>/dev/null || echo "$FINDINGS")
 }
 
-# 1. Suspicious cron jobs
+# Detect platform
+IS_MACOS=false
+[[ "$(uname)" == "Darwin" ]] && IS_MACOS=true
+
+# 1. Suspicious cron jobs / launchd persistence
 check_cron() {
     local suspicious=""
-    # Check all user crontabs
-    while IFS= read -r user_cron; do
-        [[ -f "$user_cron" ]] || continue
-        while IFS= read -r line; do
-            if echo "$line" | grep -qiE '(wget|curl.*\|.*sh|base64.*decode|/dev/tcp|eval|nc\s+-|ncat|mkfifo)' 2>/dev/null; then
-                suspicious+="$user_cron: $line\n"
-            fi
-        done < "$user_cron"
-    done < <(find /var/spool/cron/crontabs /var/spool/cron -maxdepth 1 -type f 2>/dev/null || true)
 
-    # Check system crontabs
-    while IFS= read -r sys_cron; do
-        [[ -f "$sys_cron" ]] || continue
-        while IFS= read -r line; do
-            if echo "$line" | grep -qiE '(wget|curl.*\|.*sh|base64.*decode|/dev/tcp|eval)' 2>/dev/null; then
-                suspicious+="$sys_cron: $line\n"
-            fi
-        done < "$sys_cron"
-    done < <(find /etc/crontab /etc/cron.d -maxdepth 1 -type f 2>/dev/null || true)
+    if [[ "$IS_MACOS" == true ]]; then
+        # macOS: check LaunchAgents/LaunchDaemons for suspicious plists
+        local plist_dirs=(
+            "$HOME/Library/LaunchAgents"
+            "/Library/LaunchAgents"
+            "/Library/LaunchDaemons"
+        )
+        for pdir in "${plist_dirs[@]}"; do
+            [[ -d "$pdir" ]] || continue
+            while IFS= read -r plist; do
+                [[ -f "$plist" ]] || continue
+                if grep -qiE '(wget|curl.*\|.*sh|base64.*decode|/dev/tcp|eval|nc\s+-|ncat|mkfifo|python.*-c|osascript.*-e)' "$plist" 2>/dev/null; then
+                    suspicious+="$plist\n"
+                fi
+            done < <(find "$pdir" -name "*.plist" -type f 2>/dev/null || true)
+        done
+
+        # Also check for crontab entries (macOS supports them too)
+        local user_crontab
+        user_crontab=$(crontab -l 2>/dev/null || true)
+        if [[ -n "$user_crontab" ]]; then
+            while IFS= read -r line; do
+                if echo "$line" | grep -qiE '(wget|curl.*\|.*sh|base64.*decode|/dev/tcp|eval|nc\s+-|ncat|mkfifo)' 2>/dev/null; then
+                    suspicious+="user crontab: $line\n"
+                fi
+            done <<< "$user_crontab"
+        fi
+    else
+        # Linux: check crontab spool dirs
+        while IFS= read -r user_cron; do
+            [[ -f "$user_cron" ]] || continue
+            while IFS= read -r line; do
+                if echo "$line" | grep -qiE '(wget|curl.*\|.*sh|base64.*decode|/dev/tcp|eval|nc\s+-|ncat|mkfifo)' 2>/dev/null; then
+                    suspicious+="$user_cron: $line\n"
+                fi
+            done < "$user_cron"
+        done < <(find /var/spool/cron/crontabs /var/spool/cron -maxdepth 1 -type f 2>/dev/null || true)
+
+        # Check system crontabs
+        while IFS= read -r sys_cron; do
+            [[ -f "$sys_cron" ]] || continue
+            while IFS= read -r line; do
+                if echo "$line" | grep -qiE '(wget|curl.*\|.*sh|base64.*decode|/dev/tcp|eval)' 2>/dev/null; then
+                    suspicious+="$sys_cron: $line\n"
+                fi
+            done < "$sys_cron"
+        done < <(find /etc/crontab /etc/cron.d -maxdepth 1 -type f 2>/dev/null || true)
+    fi
 
     if [[ -n "$suspicious" ]]; then
-        add_finding "high" "cron" "Suspicious cron jobs detected" "$suspicious"
+        add_finding "high" "cron" "Suspicious scheduled jobs detected" "$suspicious"
     fi
 }
 
 # 2. Unexpected listening ports
 check_ports() {
-    local ports=""
-    if command -v ss &>/dev/null; then
-        ports=$(ss -tlnp 2>/dev/null | tail -n +2 || true)
-    elif command -v netstat &>/dev/null; then
-        ports=$(netstat -tlnp 2>/dev/null | tail -n +3 || true)
+    local suspicious=""
+
+    if [[ "$IS_MACOS" == true ]]; then
+        # macOS: use lsof which works reliably
+        local ports=""
+        ports=$(lsof -iTCP -sTCP:LISTEN -nP 2>/dev/null | tail -n +2 || true)
+        if [[ -n "$ports" ]]; then
+            while IFS= read -r line; do
+                local port
+                port=$(echo "$line" | awk '{print $9}' | grep -oE '[0-9]+$' || true)
+                case "$port" in
+                    22|80|443|8080|8443|3000|5432|3306|6379|53|25|587|993|995|8330|"") ;;
+                    *)
+                        if [[ -n "$port" ]]; then
+                            suspicious+="$line\n"
+                        fi
+                        ;;
+                esac
+            done <<< "$ports"
+        fi
+    else
+        # Linux: use ss or netstat
+        local ports=""
+        if command -v ss &>/dev/null; then
+            ports=$(ss -tlnp 2>/dev/null | tail -n +2 || true)
+        elif command -v netstat &>/dev/null; then
+            ports=$(netstat -tlnp 2>/dev/null | tail -n +3 || true)
+        fi
+        if [[ -n "$ports" ]]; then
+            while IFS= read -r line; do
+                local port
+                port=$(echo "$line" | awk '{print $4}' | grep -oE '[0-9]+$' || true)
+                case "$port" in
+                    22|80|443|8080|8443|3000|5432|3306|6379|53|25|587|993|995|8330|"") ;;
+                    *)
+                        if [[ -n "$port" ]]; then
+                            suspicious+="$line\n"
+                        fi
+                        ;;
+                esac
+            done <<< "$ports"
+        fi
     fi
 
-    if [[ -n "$ports" ]]; then
-        # Flag non-standard ports (not 22, 80, 443, 8080, etc.)
-        local suspicious=""
-        while IFS= read -r line; do
-            local port
-            port=$(echo "$line" | awk '{print $4}' | grep -oE '[0-9]+$' || true)
-            case "$port" in
-                22|80|443|8080|8443|3000|5432|3306|6379|53|25|587|993|995|8330|"") ;;
-                *)
-                    if [[ -n "$port" ]]; then
-                        suspicious+="$line\n"
-                    fi
-                    ;;
-            esac
-        done <<< "$ports"
-
-        if [[ -n "$suspicious" ]]; then
-            add_finding "medium" "ports" "Unexpected listening ports detected" "$suspicious"
-        fi
+    if [[ -n "$suspicious" ]]; then
+        add_finding "medium" "ports" "Unexpected listening ports detected" "$suspicious"
     fi
 }
 
@@ -150,7 +213,9 @@ check_system_files() {
 check_ssh_keys() {
     local issues=""
     # Check authorized_keys for all users
-    for home in /root /home/*; do
+    local home_dirs=(/root /home/*)
+    [[ "$IS_MACOS" == true ]] && home_dirs=(/Users/*)
+    for home in "${home_dirs[@]}"; do
         local ak="$home/.ssh/authorized_keys"
         if [[ -f "$ak" ]]; then
             local count
@@ -184,7 +249,10 @@ check_ssh_keys() {
 check_permissions() {
     local issues=""
     # World-writable sensitive files
-    for f in /etc/passwd /etc/shadow /etc/sudoers /etc/ssh/sshd_config; do
+    local sensitive_files=(/etc/passwd /etc/shadow /etc/sudoers /etc/ssh/sshd_config)
+    # macOS doesn't use /etc/shadow — uses Directory Services
+    [[ "$IS_MACOS" == true ]] && sensitive_files=(/etc/passwd /etc/sudoers /etc/ssh/sshd_config)
+    for f in "${sensitive_files[@]}"; do
         if [[ -f "$f" ]]; then
             local perms
             perms=$(stat -c "%a" "$f" 2>/dev/null || stat -f "%Lp" "$f" 2>/dev/null || true)
@@ -240,6 +308,54 @@ check_clamav() {
     fi
 }
 
+# 7. macOS-specific security checks
+check_macos_security() {
+    [[ "$IS_MACOS" != true ]] && return
+
+    # System Integrity Protection (SIP)
+    local sip_status
+    sip_status=$(csrutil status 2>/dev/null || true)
+    if [[ -n "$sip_status" ]]; then
+        if echo "$sip_status" | grep -qi "disabled"; then
+            add_finding "critical" "macos_sip" "System Integrity Protection (SIP) is DISABLED" "SIP protects system files from modification. Re-enable: boot to Recovery, run csrutil enable"
+        fi
+    fi
+
+    # Gatekeeper
+    local gk_status
+    gk_status=$(spctl --status 2>/dev/null || true)
+    if [[ -n "$gk_status" ]]; then
+        if echo "$gk_status" | grep -qi "disabled"; then
+            add_finding "high" "macos_gatekeeper" "Gatekeeper is DISABLED" "Gatekeeper blocks unsigned/unnotarized apps. Re-enable: sudo spctl --master-enable"
+        fi
+    fi
+
+    # FileVault (disk encryption)
+    local fv_status
+    fv_status=$(fdesetup status 2>/dev/null || true)
+    if [[ -n "$fv_status" ]]; then
+        if echo "$fv_status" | grep -qi "off"; then
+            add_finding "high" "macos_filevault" "FileVault disk encryption is OFF" "Enable via System Settings > Privacy & Security > FileVault"
+        fi
+    fi
+
+    # Application Firewall
+    local fw_status
+    fw_status=$(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null || true)
+    if [[ -n "$fw_status" ]]; then
+        if echo "$fw_status" | grep -qi "disabled"; then
+            add_finding "medium" "macos_firewall" "macOS Application Firewall is DISABLED" "Enable via System Settings > Network > Firewall, or: sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on"
+        fi
+    fi
+
+    # Remote Login (SSH)
+    local remote_login
+    remote_login=$(systemsetup -getremotelogin 2>/dev/null || true)
+    if echo "$remote_login" | grep -qi "on"; then
+        add_finding "low" "macos_remote_login" "Remote Login (SSH) is enabled" "Disable if not needed: System Settings > General > Sharing > Remote Login"
+    fi
+}
+
 # Run all checks
 check_cron
 check_ports
@@ -247,6 +363,7 @@ check_system_files
 check_ssh_keys
 check_permissions
 check_clamav
+check_macos_security
 
 # Run openclaw security audit if available
 OPENCLAW_AUDIT=""
@@ -271,7 +388,7 @@ cat <<EOF
 EOF
 
 # Push to dashboard
-AUDIT_DURATION=$(($(date +%s%3N) - AUDIT_START_MS))
+AUDIT_DURATION=$(($(get_ms) - AUDIT_START_MS))
 AUDIT_STATUS="clean"
 AUDIT_SEVERITY="none"
 [[ $SCORE -lt 50 ]] && AUDIT_STATUS="suspicious" && AUDIT_SEVERITY="high"

@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0] — 2026-02-16
+
+### Added
+- Full macOS compatibility for host_audit.sh, scan_file.sh, audit_skill.sh
+- macOS security checks: SIP, Gatekeeper, FileVault, Application Firewall, Remote Login
+- LaunchAgent/LaunchDaemon persistence scanning (replaces Linux-only cron spool checks on macOS)
+- Port scanning via `lsof` on macOS (fixes broken `netstat -tlnp` on Darwin)
+
+### Fixed
+- Cross-platform millisecond timestamps (`date +%s%3N` doesn't work on macOS)
+- SSH key audit now checks `/Users/*` on macOS instead of `/home/*`
+- Permissions check skips `/etc/shadow` on macOS (uses Directory Services)
+- All platform-specific code degrades gracefully — no crashes if commands unavailable
+
 ## [1.1.1] — 2026-02-16
 
 ### Changed
