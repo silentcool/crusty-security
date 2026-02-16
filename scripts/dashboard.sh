@@ -93,7 +93,48 @@ cg_push_heartbeat() {
     # Get installed skills
     local skills_json="[]"
     if command -v openclaw &>/dev/null; then
-        skills_json=$(openclaw skills list 2>/dev/null | grep '✓ ready' | sed 's/│/|/g' | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $3); print $3}' | sed 's/^[^ ]* //' | python3 -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))" 2>/dev/null || echo "[]")
+        skills_json=$(openclaw skills list 2>/dev/null | python3 -c "
+import sys, json, re
+
+lines = list(sys.stdin)
+skills = []
+i = 0
+while i < len(lines):
+    line = lines[i]
+    if '✓ ready' not in line and '✓' not in line:
+        i += 1
+        continue
+    # Only match actual ready status
+    if not re.search(r'✓\s*ready', line):
+        i += 1
+        continue
+    parts = re.split(r'│', line)
+    if len(parts) < 3:
+        i += 1
+        continue
+    # Skill name is in column 2 (index 2)
+    name = parts[2].strip()
+    # Remove emoji prefix
+    name = re.sub(r'^[^\x00-\x7F]+\s*', '', name).strip()
+    # Check continuation lines (next lines that have empty status column)
+    j = i + 1
+    while j < len(lines):
+        next_parts = re.split(r'│', lines[j])
+        if len(next_parts) < 3:
+            break
+        status_col = next_parts[1].strip() if len(next_parts) > 1 else ''
+        if status_col:  # Non-empty status = new skill row
+            break
+        continuation = next_parts[2].strip()
+        continuation = re.sub(r'^[^\x00-\x7F]+\s*', '', continuation).strip()
+        if continuation:
+            name += continuation
+        j += 1
+    if name:
+        skills.append(name)
+    i = j if j > i + 1 else i + 1
+print(json.dumps(skills))
+" 2>/dev/null || echo "[]")
     fi
 
     local uptime_secs

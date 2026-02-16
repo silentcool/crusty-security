@@ -26,7 +26,7 @@ DATA_DIR = Path(os.environ.get("CLAWGUARD_DATA_DIR", "/tmp/clawguard_data"))
 BLOCKLIST_FILE = DATA_DIR / "blocklist.json"
 CATALOG_FILE = DATA_DIR / "catalog.json"
 INSTALLED_CACHE = DATA_DIR / "installed_skills.json"
-DASHBOARD_URL = os.environ.get("CRUSTY_DASHBOARD_URL", os.environ.get("CLAWGUARD_DASHBOARD_URL", "https://clawguard-rust.vercel.app"))
+DASHBOARD_URL = os.environ.get("CRUSTY_DASHBOARD_URL", os.environ.get("CLAWGUARD_DASHBOARD_URL", "https://crustysecurity.com"))
 API_KEY = os.environ.get("CRUSTY_API_KEY", os.environ.get("CLAWGUARD_API_KEY", ""))
 
 # Known malicious patterns in skill owners/slugs (seed blocklist)
@@ -99,6 +99,8 @@ def get_installed_skills():
     skill_dirs = [
         Path("/data/workspace/skills"),
         Path("/openclaw/skills"),
+        Path.home() / ".openclaw" / "skills",
+        Path.home() / "clawd" / "skills",
     ]
 
     for skills_root in skill_dirs:
