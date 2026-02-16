@@ -1,6 +1,6 @@
 ---
 name: crusty-security
-version: 1.2.0
+version: 1.3.0
 description: >
   Security and threat scanning skill for OpenClaw agents. Scans files and
   skills for malware. Monitors agent behavior for compromise indicators. Audits host
