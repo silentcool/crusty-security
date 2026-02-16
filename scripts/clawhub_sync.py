@@ -113,18 +113,30 @@ def get_installed_skills():
             if any(s["slug"] == slug for s in installed):
                 continue
 
-            # Read SKILL.md for metadata
-            skill_md = skill_dir / "SKILL.md"
-            version = "local"
-            if skill_md.exists():
-                with open(skill_md) as f:
-                    content = f.read()
-                    # Try to extract version from frontmatter
-                    if "version:" in content:
-                        for line in content.split("\n"):
-                            if line.strip().startswith("version:"):
-                                version = line.split(":", 1)[1].strip().strip("\"'")
-                                break
+            # Read version from _meta.json (ClawHub), SKILL.md frontmatter, or fallback
+            version = ""
+            meta_json = skill_dir / "_meta.json"
+            if meta_json.exists():
+                try:
+                    with open(meta_json) as f:
+                        meta = json.load(f)
+                        version = meta.get("version", "")
+                except Exception:
+                    pass
+
+            if not version:
+                skill_md = skill_dir / "SKILL.md"
+                if skill_md.exists():
+                    with open(skill_md) as f:
+                        content = f.read()
+                        if "version:" in content:
+                            for line in content.split("\n"):
+                                if line.strip().startswith("version:"):
+                                    version = line.split(":", 1)[1].strip().strip("\"'")
+                                    break
+
+            if not version:
+                version = "local"
 
             # Hash all files for integrity checking
             file_hashes = {}
@@ -380,7 +392,7 @@ def main():
                 method="POST"
             )
             resp = urllib.request.urlopen(req, timeout=10, context=ssl.create_default_context())
-            print("   ✅ Skills detail pushed to dashboard")
+            print("   ✅ Skills detail pushed to dashboard", file=sys.stderr)
         except Exception as e:
             print(f"   ⚠️ Skills detail push failed: {e}", file=sys.stderr)
 
