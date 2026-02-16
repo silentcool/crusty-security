@@ -98,9 +98,12 @@ cg_push_heartbeat() {
 
     local uptime_secs
     if [[ "$(uname)" == "Darwin" ]]; then
-        uptime_secs=$(sysctl -n kern.boottime 2>/dev/null | awk -F'[= ,]' '{for(i=1;i<=NF;i++) if($i=="sec") print $(i+1)}' | head -1 || echo 0)
-        if [[ "$uptime_secs" -gt 0 ]] 2>/dev/null; then
-            uptime_secs=$(( $(date +%s) - uptime_secs ))
+        local boot_sec
+        boot_sec=$(sysctl -n kern.boottime 2>/dev/null | grep -o 'sec = [0-9]*' | head -1 | grep -o '[0-9]*' || echo 0)
+        if [[ "$boot_sec" -gt 0 ]] 2>/dev/null; then
+            uptime_secs=$(( $(date +%s) - boot_sec ))
+        else
+            uptime_secs=0
         fi
         local mem_total mem_avail
         mem_total=$(sysctl -n hw.memsize 2>/dev/null | awk '{print int($1/1024)}' || echo 0)
@@ -111,6 +114,11 @@ cg_push_heartbeat() {
         mem_total=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || echo 0)
         mem_avail=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}' || echo 0)
     fi
+
+    # Safety: ensure all numeric values are valid (prevent invalid JSON)
+    [[ "${uptime_secs:-}" =~ ^[0-9]+$ ]] || uptime_secs=0
+    [[ "${mem_total:-}" =~ ^[0-9]+$ ]] || mem_total=0
+    [[ "${mem_avail:-}" =~ ^[0-9]+$ ]] || mem_avail=0
 
     local payload
     payload=$(cat <<EOJSON
