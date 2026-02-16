@@ -1,6 +1,6 @@
 ---
-name: clawguard
-version: 1.2.2
+name: crusty-security
+version: 1.2.0
 description: >
   Security and threat scanning skill for OpenClaw agents. Scans files and
   skills for malware. Monitors agent behavior for compromise indicators. Audits host
@@ -46,41 +46,24 @@ Run `bash setup.sh` — that's it. This will:
 
 **⚠️ IMPORTANT — After setup.sh, you MUST create the cron jobs below using the OpenClaw cron tool.** Setup.sh handles the bash-level installation, but cron jobs require agent-level tools. Do this immediately after first install — don't wait for the user to ask.
 
-### ⛔ CRITICAL: Cron Job Session Types — READ THIS FIRST
-
-**ALL cron jobs that need to execute commands MUST use `isolated` / `agentTurn`.** Never use `main` / `systemEvent` for jobs that run shell commands, API calls, or any action.
-
-Why: `systemEvent` only injects text into the main session chat. If the main agent isn't actively engaged, isn't paying attention, or doesn't have the right environment sourced, **the command silently never executes.** This is a known failure mode — the cron shows "ok" status but nothing actually happens.
-
-| Use case | sessionTarget | payload.kind |
-|----------|---------------|--------------|
-| **Run a command / API call / script** | `isolated` | `agentTurn` |
-| **Reminder or nudge (no execution needed)** | `main` | `systemEvent` |
-
-Rule of thumb: **If it has `bash`, `python3`, `curl`, or any executable in the payload → it MUST be `isolated` / `agentTurn`.** No exceptions.
-
 ### Required Cron Jobs (create on first install)
 
 Check what's missing: `bash scripts/check_crons.sh`
 
 Use the OpenClaw **cron tool** (`cron add`) to create these. Replace `{SKILL_DIR}` with the actual path to this skill directory and `{WORKSPACE}` with the workspace path (usually `/data/workspace`).
 
-**All jobs below use `isolated` / `agentTurn`** to guarantee execution:
-
-| Name | Schedule | sessionTarget | payload.kind | Payload message |
-|------|----------|---------------|--------------|-----------------|
-| `crusty-daily-scan` | cron `0 3 * * *` | `isolated` | `agentTurn` | `Run Crusty Security daily scan: bash {SKILL_DIR}/scripts/scan_file.sh --incremental -r {WORKSPACE} && bash {SKILL_DIR}/scripts/monitor_agent.sh` |
-| `crusty-weekly-full` | cron `0 3 * * 0` | `isolated` | `agentTurn` | `Run Crusty Security weekly scan: bash {SKILL_DIR}/scripts/scan_file.sh -r {WORKSPACE} && bash {SKILL_DIR}/scripts/host_audit.sh && bash {SKILL_DIR}/scripts/generate_report.sh --output /tmp/clawguard_logs/weekly_report.md` |
-| `crusty-monthly-deep` | cron `0 4 1 * *` | `isolated` | `agentTurn` | `Run Crusty Security monthly deep audit: bash {SKILL_DIR}/scripts/host_audit.sh --deep` |
+| Name | Schedule | sessionTarget | Payload |
+|------|----------|---------------|---------|
+| `crusty-daily-scan` | cron `0 3 * * *` | main / systemEvent | `Run Crusty Security daily scan: bash {SKILL_DIR}/scripts/scan_file.sh --incremental -r {WORKSPACE} && bash {SKILL_DIR}/scripts/monitor_agent.sh` |
+| `crusty-weekly-full` | cron `0 3 * * 0` | main / systemEvent | `Run Crusty Security weekly scan: bash {SKILL_DIR}/scripts/scan_file.sh -r {WORKSPACE} && bash {SKILL_DIR}/scripts/host_audit.sh && bash {SKILL_DIR}/scripts/generate_report.sh --output /tmp/crusty_logs/weekly_report.md` |
+| `crusty-monthly-deep` | cron `0 4 1 * *` | main / systemEvent | `Run Crusty Security monthly deep audit: bash {SKILL_DIR}/scripts/host_audit.sh --deep` |
 
 ### Dashboard Cron Jobs (only if `CRUSTY_API_KEY` is set)
 
-| Name | Schedule | sessionTarget | payload.kind | Payload message |
-|------|----------|---------------|--------------|-----------------|
-| `crusty-heartbeat` | every 300000ms (5 min) | `isolated` | `agentTurn` | `Run this shell command with environment sourced: source ~/.zshrc 2>/dev/null; source ~/.bashrc 2>/dev/null; bash {SKILL_DIR}/scripts/dashboard.sh heartbeat` |
-| `crusty-clawhub-sync` | every 43200000ms (12h) | `isolated` | `agentTurn` | `Run ClawHub security sync: source ~/.zshrc 2>/dev/null; source ~/.bashrc 2>/dev/null; python3 {SKILL_DIR}/scripts/clawhub_sync.py --push. Report any critical or high severity findings.` |
-
-**Note:** The heartbeat and sync jobs explicitly source shell profiles to ensure environment variables like `CRUSTY_API_KEY` are available. This is required because isolated sessions don't inherit the main session's environment.
+| Name | Schedule | sessionTarget | Payload |
+|------|----------|---------------|---------|
+| `crusty-heartbeat` | every 300000ms (5 min) | main / systemEvent | `Crusty Security heartbeat: Run bash {SKILL_DIR}/scripts/dashboard.sh heartbeat` |
+| `crusty-clawhub-sync` | every 43200000ms (12h) | isolated / agentTurn | `Run ClawHub security sync: python3 {SKILL_DIR}/scripts/clawhub_sync.py --push. Report any critical or high severity findings.` |
 
 Check `cron list` first — skip any that already exist (match by name prefix `crusty-`).
 
@@ -116,13 +99,13 @@ bash scripts/scan_file.sh -r --incremental /data/workspace  # Skip unchanged fil
 **Quarantine workflow:**
 ```bash
 bash scripts/scan_file.sh --quarantine /path/to/file   # Move to quarantine
-# Quarantine location: $CLAWGUARD_QUARANTINE (default: /tmp/clawguard_quarantine)
-# Manifest: /tmp/clawguard_quarantine/manifest.json
+# Quarantine location: $CRUSTY_QUARANTINE (default: /tmp/crusty_quarantine)
+# Manifest: /tmp/crusty_quarantine/manifest.json
 ```
 
 **Important notes:**
 - ClamAV prefers clamdscan (daemon) when available, falls back to clamscan
-- Max file size default: 200M (configurable via `CLAWGUARD_MAX_FILE_SIZE`)
+- Max file size default: 200M (configurable via `CRUSTY_MAX_FILE_SIZE`)
 - Encrypted archives: flagged as "unscanned" — cannot inspect contents
 - Large archives: ClamAV handles zip, rar, 7z, tar, gz natively
 
@@ -212,18 +195,18 @@ ClamAV has moderate false positive rates. Strategy:
 
 ## Quarantine Procedures
 
-**Location:** `$CLAWGUARD_QUARANTINE` (default: `/tmp/clawguard_quarantine`)
+**Location:** `$CRUSTY_QUARANTINE` (default: `/tmp/crusty_quarantine`)
 **Manifest:** `manifest.json` in quarantine directory tracks original paths and timestamps.
 
 ```bash
 # View quarantined files
-cat /tmp/clawguard_quarantine/manifest.json | python3 -m json.tool
+cat /tmp/crusty_quarantine/manifest.json | python3 -m json.tool
 
 # Restore a false positive
-mv /tmp/clawguard_quarantine/<file> /original/path/
+mv /tmp/crusty_quarantine/<file> /original/path/
 
 # Permanently delete
-rm -rf /tmp/clawguard_quarantine/*
+rm -rf /tmp/crusty_quarantine/*
 ```
 
 **Never use `clamscan --remove`.** Always quarantine first, verify, then delete.
@@ -254,12 +237,14 @@ For hosts with <1GB RAM:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CRUSTY_API_KEY` | (none) | Dashboard API key |
-| `CRUSTY_DASHBOARD_URL` | (none) | Dashboard URL |
-| `CLAWGUARD_QUARANTINE` | `/tmp/clawguard_quarantine` | Quarantine directory |
-| `CLAWGUARD_LOG_DIR` | `/tmp/clawguard_logs` | Scan log directory |
-| `CLAWGUARD_MAX_FILE_SIZE` | `200M` | Max file size to scan |
-| `CLAWGUARD_WORKSPACE` | `/data/workspace` | Agent workspace path |
+| `CRUSTY_API_KEY` | (none) | Dashboard API key (`cg_live_...`) |
+| `CRUSTY_DASHBOARD_URL` | `https://crustysecurity.com` | Dashboard URL |
+| `CRUSTY_QUARANTINE` | `/tmp/crusty_quarantine` | Quarantine directory |
+| `CRUSTY_LOG_DIR` | `/tmp/crusty_logs` | Scan log directory |
+| `CRUSTY_MAX_FILE_SIZE` | `200M` | Max file size to scan |
+| `CRUSTY_WORKSPACE` | auto-detected | Agent workspace path |
+
+> **Backwards compat:** `CLAWGUARD_*` env vars are still supported but deprecated. Use `CRUSTY_*` going forward.
 
 ## Incident Response
 

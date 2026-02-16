@@ -13,7 +13,7 @@ echo -e "${GREEN}🦀 Crusty Security — Setup${NC}"
 echo ""
 
 # Auto-detect workspace
-SCAN_DIR="${CLAWGUARD_WORKSPACE:-}"
+SCAN_DIR="${CRUSTY_WORKSPACE:-}"
 [[ -z "$SCAN_DIR" && -d "/data/workspace" ]] && SCAN_DIR="/data/workspace"
 [[ -z "$SCAN_DIR" && -d "$HOME/clawd" ]] && SCAN_DIR="$HOME/clawd"
 [[ -z "$SCAN_DIR" && -d "$HOME/.openclaw" ]] && SCAN_DIR="$HOME/.openclaw"
@@ -73,7 +73,7 @@ chmod +x "$SCRIPT_DIR"/scripts/*.sh "$SCRIPT_DIR"/scripts/*.py 2>/dev/null || tr
 echo -e "  ✅ Scripts ready"
 
 # 4. Create data directories
-mkdir -p /tmp/clawguard_logs /tmp/clawguard_quarantine /tmp/clawguard_data 2>/dev/null || true
+mkdir -p /tmp/crusty_logs /tmp/crusty_quarantine /tmp/crusty_data 2>/dev/null || true
 echo -e "  ✅ Data directories created"
 
 # 5. Quick verification scan

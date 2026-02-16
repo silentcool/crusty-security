@@ -10,7 +10,7 @@ Usage:
 Environment:
     CLAWGUARD_API_KEY           Dashboard API key
     CLAWGUARD_DASHBOARD_URL     Dashboard URL
-    CLAWGUARD_DATA_DIR          Data directory (default: /tmp/clawguard_data)
+    CRUSTY_DATA_DIR             Data directory (default: /tmp/crusty_data)
 """
 
 import json
@@ -22,7 +22,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-DATA_DIR = Path(os.environ.get("CLAWGUARD_DATA_DIR", "/tmp/clawguard_data"))
+DATA_DIR = Path(os.environ.get("CLAWGUARD_DATA_DIR", "/tmp/crusty_data"))
 BLOCKLIST_FILE = DATA_DIR / "blocklist.json"
 CATALOG_FILE = DATA_DIR / "catalog.json"
 INSTALLED_CACHE = DATA_DIR / "installed_skills.json"

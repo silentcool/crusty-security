@@ -15,9 +15,9 @@ get_ms() {
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/dashboard.sh" 2>/dev/null || true
-QUARANTINE_DIR="${CLAWGUARD_QUARANTINE:-/tmp/clawguard_quarantine}"
-MAX_FILE_SIZE="${CLAWGUARD_MAX_FILE_SIZE:-200M}"
-SCAN_LOG_DIR="${CLAWGUARD_LOG_DIR:-/tmp/clawguard_logs}"
+QUARANTINE_DIR="${CRUSTY_QUARANTINE:-${CLAWGUARD_QUARANTINE:-/tmp/crusty_quarantine}}"
+MAX_FILE_SIZE="${CRUSTY_MAX_FILE_SIZE:-${CLAWGUARD_MAX_FILE_SIZE:-200M}}"
+SCAN_LOG_DIR="${CRUSTY_LOG_DIR:-${CLAWGUARD_LOG_DIR:-/tmp/crusty_logs}}"
 ACTION="alert-only"
 RECURSIVE=false
 INCREMENTAL=false
@@ -40,9 +40,9 @@ Options:
   -h, --help           Show this help
 
 Environment:
-  CLAWGUARD_QUARANTINE    Quarantine directory (default: /tmp/clawguard_quarantine)
-  CLAWGUARD_MAX_FILE_SIZE Max file size to scan (default: 200M)
-  CLAWGUARD_LOG_DIR       Log directory (default: /tmp/clawguard_logs)
+  CRUSTY_QUARANTINE        Quarantine directory (default: /tmp/crusty_quarantine)
+  CRUSTY_MAX_FILE_SIZE     Max file size to scan (default: 200M)
+  CRUSTY_LOG_DIR           Log directory (default: /tmp/crusty_logs)
 
 Output: JSON with {status, file, engine, threat_name, timestamp, details}
 Exit codes: 0 = scan completed (check JSON status field), 1 = runtime error

@@ -16,12 +16,12 @@ Options:
   -h, --help     Show this help
 
 Environment:
-  CLAWGUARD_LOG_DIR   Scan log directory (default: /tmp/clawguard_logs)
+  CRUSTY_LOG_DIR      Scan log directory (default: /tmp/crusty_logs)
 EOF
     exit 0
 }
 
-LOG_DIR="${CLAWGUARD_LOG_DIR:-/tmp/clawguard_logs}"
+LOG_DIR="${CRUSTY_LOG_DIR:-${CLAWGUARD_LOG_DIR:-/tmp/crusty_logs}}"
 DAYS=7
 OUTPUT=""
 

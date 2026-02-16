@@ -31,9 +31,9 @@ EOF
     exit 0
 }
 
-WORKSPACE="${CLAWGUARD_WORKSPACE:-/data/workspace}"
+WORKSPACE="${CRUSTY_WORKSPACE:-${CLAWGUARD_WORKSPACE:-/data/workspace}}"
 HOURS=24
-LOG_DIR="${CLAWGUARD_LOG_DIR:-/tmp/clawguard_logs}"
+LOG_DIR="${CRUSTY_LOG_DIR:-${CLAWGUARD_LOG_DIR:-/tmp/crusty_logs}}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

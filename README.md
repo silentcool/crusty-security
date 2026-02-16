@@ -236,15 +236,15 @@ You can adjust schedules by asking your agent to modify the cron jobs.
 |----------|---------|----------|-------------|
 | `CRUSTY_API_KEY` | — | No | Dashboard API key (from crustysecurity.com) |
 | `CRUSTY_DASHBOARD_URL` | — | No | Dashboard URL |
-| `CLAWGUARD_QUARANTINE` | `/tmp/clawguard_quarantine` | No | Quarantine directory |
-| `CLAWGUARD_LOG_DIR` | `/tmp/clawguard_logs` | No | Scan log directory |
-| `CLAWGUARD_MAX_FILE_SIZE` | `200M` | No | Max file size for scanning |
-| `CLAWGUARD_WORKSPACE` | `/data/workspace` | No | Agent workspace path |
+| `CRUSTY_QUARANTINE` | `/tmp/crusty_quarantine` | No | Quarantine directory |
+| `CRUSTY_LOG_DIR` | `/tmp/crusty_logs` | No | Scan log directory |
+| `CRUSTY_MAX_FILE_SIZE` | `200M` | No | Max file size for scanning |
+| `CRUSTY_WORKSPACE` | `/data/workspace` | No | Agent workspace path |
 
 ## File Structure
 
 ```
-clawguard/
+crusty-security/
 ├── SKILL.md              # Agent instructions (OpenClaw reads this)
 ├── README.md             # Human documentation (you're reading it)
 ├── LICENSE.txt           # MIT License
