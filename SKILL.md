@@ -1,14 +1,14 @@
 ---
 name: clawguard
-version: 1.0.0
+version: 1.1.0
 description: >
-  Security and threat scanning skill for OpenClaw agents. Scans files, URLs, and
+  Security and threat scanning skill for OpenClaw agents. Scans files and
   skills for malware. Monitors agent behavior for compromise indicators. Audits host
-  security posture. Triggers on: "scan this file", "check this URL", "is this safe",
-  "virus scan", "malware check", "security scan", "scan for threats", "check this
-  download", "quarantine", "scan my system", "threat report", "scheduled scan",
-  "audit host security", "audit this skill", "check agent integrity",
-  "security report", "monitor agent".
+  security posture. Triggers on: "scan this file", "is this safe",
+  "virus scan", "malware check", "security scan", "scan for threats",
+  "check this download", "quarantine", "scan my system", "threat report",
+  "scheduled scan", "audit host security", "audit this skill",
+  "check agent integrity", "security report", "monitor agent".
 homepage: https://crustysecurity.com
 metadata: {"openclaw":{"requires":{"bins":["bash","python3"]}}}
 ---
@@ -17,7 +17,7 @@ metadata: {"openclaw":{"requires":{"bins":["bash","python3"]}}}
 
 ## Overview
 
-Crusty Security protects OpenClaw agents against real threats: malware in downloaded files, malicious URLs, compromised skills from ClawHub, data exfiltration, prompt injection payloads, and host-level compromise. It uses layered scanning (ClamAV → VirusTotal) and AI-agent-specific static analysis.
+Crusty Security protects OpenClaw agents against real threats: malware in downloaded files, compromised skills from ClawHub, data exfiltration, prompt injection payloads, and host-level compromise. It uses ClamAV for file scanning and AI-agent-specific static analysis.
 
 **Threat model:** The agent itself is the attack surface. Prompt injection can lead to code execution. Malicious skills run with agent privileges. Crusty Security protects both the host AND the agent's integrity.
 
@@ -28,8 +28,6 @@ Crusty Security protects OpenClaw agents against real threats: malware in downlo
 | Install ClamAV | `bash scripts/install_clamav.sh` |
 | Scan a file | `bash scripts/scan_file.sh /path/to/file` |
 | Scan a directory | `bash scripts/scan_file.sh -r /path/to/dir` |
-| Scan a URL | `python3 scripts/scan_url.py "https://example.com"` |
-| Check file on VirusTotal | `python3 scripts/scan_vt.py /path/to/file` |
 | Audit a skill | `bash scripts/audit_skill.sh /path/to/skill/` |
 | Host security audit | `bash scripts/host_audit.sh` |
 | Monitor agent integrity | `bash scripts/monitor_agent.sh` |
@@ -41,11 +39,16 @@ All scripts output JSON. All scripts support `--help`. All paths are relative to
 
 Run `bash setup.sh` — that's it. ClamAV installs automatically if missing, including on first scan.
 
-Optional environment variables for cloud scanning:
-- `VIRUSTOTAL_API_KEY` — free at virustotal.com (4 req/min, 500/day)
-- `GOOGLE_SAFE_BROWSING_KEY` — free via Google Cloud Console
-
 See `references/setup.md` for detailed configuration.
+
+## Dashboard Connection
+
+If your human has configured `CRUSTY_API_KEY`, the skill sends scan results to the Crusty Security dashboard (crustysecurity.com):
+- **Heartbeats** are sent every 5 minutes automatically — keeps the dashboard showing agent status
+- **Scan results** are pushed when you add `--push` to scan commands
+- **ClawHub sync** sends skill inventory with `python3 scripts/clawhub_sync.py --push`
+- If `CRUSTY_API_KEY` is NOT set, everything works locally — no data is sent anywhere
+- The dashboard never connects TO the agent — data flows one way (agent → dashboard)
 
 ## Scanning Workflows
 
@@ -54,11 +57,9 @@ See `references/setup.md` for detailed configuration.
 **Triggers:** "scan this file", "is this safe", "check this download", "virus scan"
 
 1. Run `bash scripts/scan_file.sh <path>` for ClamAV local scan
-2. If ClamAV flags something OR user wants extra confidence, escalate:
-   `python3 scripts/scan_vt.py <path>` (hash lookup only — no file upload by default)
-3. Report results:
+2. Report results:
    - ✅ Clean — "No threats detected. Scanned with ClamAV, signatures from [date]."
-   - ⚠️ Suspicious — "Low-confidence detection by ClamAV. Cross-checking with VirusTotal..."
+   - ⚠️ Suspicious — "Low-confidence detection by ClamAV. Recommend quarantine for review."
    - 🚨 Malicious — "Threat detected: [name]. Recommend quarantine. Options: quarantine, delete, or ignore."
 
 **For directories:**
@@ -79,46 +80,6 @@ bash scripts/scan_file.sh --quarantine /path/to/file   # Move to quarantine
 - Max file size default: 200M (configurable via `CLAWGUARD_MAX_FILE_SIZE`)
 - Encrypted archives: flagged as "unscanned" — cannot inspect contents
 - Large archives: ClamAV handles zip, rar, 7z, tar, gz natively
-
-### URL Scanning
-
-**Triggers:** "is this URL safe", "check this link", "scan this URL"
-
-1. Run `python3 scripts/scan_url.py "<url>"`
-2. Checks VirusTotal (70+ engines) and Google Safe Browsing
-3. Automatically resolves shortened URLs (bit.ly, t.co, etc.) — checks each URL in the redirect chain
-4. Batch mode: `python3 scripts/scan_url.py url1 url2 url3`
-
-**Graceful degradation:**
-- No API keys → warns user, suggests manual check
-- Only one key → uses available service
-- Rate limited → reports rate limit, suggests retry
-
-**Report format:**
-- ✅ Clean — "URL is clean across [N] engines."
-- ⚠️ Suspicious — "[N] engines flagged this URL. Proceed with caution."
-- 🚨 Malicious — "URL is flagged as malicious. Threats: [types]. Do NOT visit."
-
-### VirusTotal File Scanning
-
-**Triggers:** "deep scan", "check on VirusTotal", "is this really safe"
-
-`python3 scripts/scan_vt.py /path/to/file`
-
-**Privacy-first approach:**
-1. Computes SHA256 hash locally
-2. Looks up hash on VirusTotal (file never leaves the machine)
-3. If hash unknown: reports "not found" — offers upload only with explicit user consent (`--upload`)
-4. **⚠️ NEVER auto-upload files.** VirusTotal shares uploads with 70+ security vendors.
-
-**Severity classification:**
-- Clean: 0 detections
-- Low: <10% detection rate (likely false positive)
-- Medium: 10-30% detection rate
-- High: 30-60% detection rate
-- Critical: >60% detection rate
-
-**Rate limiting:** Built-in rate limiter for free tier (4 req/min). Waits automatically when hitting limits.
 
 ### Skill Auditing (Supply Chain Security)
 
@@ -184,7 +145,7 @@ Compiles all recent scan results into a markdown security posture report with:
 - Scan summary (total, clean, threats, errors)
 - Threat details with file paths and actions taken
 - Security posture score with emoji indicators
-- Recommendations (missing tools, API keys, scan schedules)
+- Recommendations (missing tools, scan schedules)
 
 ## Scheduled Scanning
 
@@ -204,13 +165,11 @@ Set up recurring scans using OpenClaw cron:
 
 ClamAV has moderate false positive rates. Strategy:
 
-1. **Single ClamAV detection, VT clean → Likely false positive.** Log and skip.
-2. **ClamAV + VT 1-3 engines → Probably false positive.** Quarantine, monitor.
-3. **ClamAV + VT 5+ engines → Real threat.** Quarantine immediately.
-4. **VT 15+ engines → Confirmed malicious.** Quarantine + incident response.
+1. **Single ClamAV detection, known safe source → Likely false positive.** Log and skip.
+2. **ClamAV detection, unknown source → Quarantine and investigate.**
+3. **ClamAV detection + skill audit findings → Real threat.** Quarantine immediately.
 
-**To whitelist a false positive:**
-- Verify via VirusTotal hash lookup
+**To handle a false positive:**
 - Submit to ClamAV: https://www.clamav.net/reports/fp
 - Document in scan logs for future reference
 
@@ -239,8 +198,6 @@ Crusty Security works fully offline with reduced capability:
 - ✅ Skill auditing (static analysis, no network needed)
 - ✅ Host auditing (local checks)
 - ✅ Agent monitoring (local checks)
-- ❌ VirusTotal lookups (queued for later)
-- ❌ Google Safe Browsing (degraded)
 - ⚠️ ClamAV signatures may be stale (check freshness in host audit)
 
 ## Resource-Constrained Environments (Raspberry Pi)
@@ -249,20 +206,19 @@ For hosts with <2GB RAM:
 - `install_clamav.sh` auto-detects low RAM and skips daemon mode
 - Use `clamscan` (on-demand) instead of `clamd` (daemon)
 - Use incremental scanning (`--incremental`) to reduce scan time
-- Rely more on VirusTotal hash lookups than local scanning
 - Skill auditing and agent monitoring have minimal resource requirements
 
 For hosts with <1GB RAM:
 - Consider skipping ClamAV entirely
-- Use skill auditing + VirusTotal hash lookups + agent monitoring only
+- Use skill auditing + agent monitoring only
 - These tools are shell/Python with negligible memory usage
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VIRUSTOTAL_API_KEY` | (none) | VirusTotal API key |
-| `GOOGLE_SAFE_BROWSING_KEY` | (none) | Google Safe Browsing key |
+| `CRUSTY_API_KEY` | (none) | Dashboard API key |
+| `CRUSTY_DASHBOARD_URL` | (none) | Dashboard URL |
 | `CLAWGUARD_QUARANTINE` | `/tmp/clawguard_quarantine` | Quarantine directory |
 | `CLAWGUARD_LOG_DIR` | `/tmp/clawguard_logs` | Scan log directory |
 | `CLAWGUARD_MAX_FILE_SIZE` | `200M` | Max file size to scan |

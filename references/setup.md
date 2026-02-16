@@ -2,45 +2,25 @@
 
 ## First Run
 
-### 1. Install ClamAV
+### 1. Run Setup
 
 ```bash
-bash scripts/install_clamav.sh
+bash setup.sh
 ```
 
-**Options:**
-- `--daemon` — Enable clamd daemon for faster repeated scans (needs ≥2GB RAM)
-- `--skip-update` — Skip signature update (useful if freshclam runs separately)
+This automatically installs ClamAV if missing, creates data directories, and verifies everything works. No manual steps needed.
 
-**Supported platforms:** Ubuntu/Debian, RHEL/CentOS/Fedora, macOS (Homebrew).
-The script auto-detects your OS and available RAM.
+**ClamAV details:**
+- Supported platforms: Ubuntu/Debian, RHEL/CentOS/Fedora, macOS (Homebrew)
+- Auto-detects your OS and available RAM
+- Low-RAM systems (<1GB): Automatically skips daemon mode, uses on-demand scanning
+- To enable daemon mode manually (faster repeated scans, needs ≥2GB RAM): `bash scripts/install_clamav.sh --daemon`
 
-**Low-RAM systems (<1GB):** The script automatically skips daemon mode. Use `clamscan` (on-demand) only. Consider skipping ClamAV entirely and relying on VirusTotal hash lookups + static analysis.
-
-### 2. API Keys (Optional)
-
-#### VirusTotal (Free)
-1. Create account at [virustotal.com](https://www.virustotal.com/)
-2. Profile → API Key → Copy
-3. `export VIRUSTOTAL_API_KEY="your_key_here"`
-4. Free tier: 4 requests/minute, 500/day, 15,500/month
-
-#### Google Safe Browsing (Free)
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create/select project → Enable "Safe Browsing API"
-3. Credentials → Create API Key
-4. `export GOOGLE_SAFE_BROWSING_KEY="your_key_here"`
-5. Free tier: 10,000 requests/day
-
-### 3. Persistent Configuration
+### 2. Persistent Configuration (Optional)
 
 Add to shell profile (`~/.bashrc`, `~/.zshrc`, or OpenClaw environment):
 
 ```bash
-# Required for cloud scanning
-export VIRUSTOTAL_API_KEY="..."
-export GOOGLE_SAFE_BROWSING_KEY="..."
-
 # Optional configuration
 export CLAWGUARD_QUARANTINE="/tmp/clawguard_quarantine"
 export CLAWGUARD_LOG_DIR="/tmp/clawguard_logs"
@@ -88,8 +68,8 @@ Place `.ndb`, `.ldb`, or `.yar` files in `/var/lib/clamav/` (or equivalent for y
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VIRUSTOTAL_API_KEY` | (none) | VirusTotal API key for file/URL scanning |
-| `GOOGLE_SAFE_BROWSING_KEY` | (none) | Google Safe Browsing key for URL checking |
+| `CRUSTY_API_KEY` | (none) | Dashboard API key (from crustysecurity.com) |
+| `CRUSTY_DASHBOARD_URL` | (none) | Dashboard URL |
 | `CLAWGUARD_QUARANTINE` | `/tmp/clawguard_quarantine` | Where infected files are moved |
 | `CLAWGUARD_LOG_DIR` | `/tmp/clawguard_logs` | Scan results and logs |
 | `CLAWGUARD_MAX_FILE_SIZE` | `200M` | Max file size for ClamAV scanning |

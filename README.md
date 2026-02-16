@@ -1,6 +1,6 @@
 # Crusty Security 🛡️
 
-**On-host security monitoring for OpenClaw AI agents.** Scans files, URLs, and skills for malware. Monitors agent behavior for compromise indicators. Audits host security posture.
+**On-host security monitoring for OpenClaw AI agents.** Scans files and skills for malware. Monitors agent behavior for compromise indicators. Audits host security posture.
 
 [![ClawHub](https://img.shields.io/badge/ClawHub-crusty-emerald)](https://clawhub.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
@@ -23,8 +23,7 @@ Crusty Security is the first security skill built specifically for the OpenClaw 
 
 | Feature | Description |
 |---------|-------------|
-| **File Scanning** | ClamAV local scan → VirusTotal escalation (70+ engines) |
-| **URL Scanning** | VirusTotal + Google Safe Browsing, auto-resolves shortened URLs |
+| **File Scanning** | ClamAV local scan with up-to-date signatures |
 | **Skill Auditing** | Static analysis for reverse shells, crypto miners, data exfiltration, obfuscation |
 | **Host Audit** | Cron jobs, open ports, SSH keys, file permissions, posture scoring (0-100) |
 | **Agent Monitoring** | Detects modified config files, suspicious processes, unexpected outbound connections |
@@ -37,22 +36,12 @@ Crusty Security is the first security skill built specifically for the OpenClaw 
 ### 1. Install
 
 ```bash
-# Via ClawHub (recommended)
 clawhub install crusty-security
-
-# Or clone directly
-git clone https://github.com/silentcool/crusty-security.git skills/clawguard
 ```
 
-### 2. Set Up ClamAV
+That's it. ClamAV is auto-installed on first scan if it's not already present. No separate setup step needed.
 
-```bash
-bash scripts/install_clamav.sh
-```
-
-This auto-detects your environment (Docker, Raspberry Pi, standard Linux) and installs + configures ClamAV appropriately. Takes ~2 minutes.
-
-### 3. Start Scanning
+### 2. Start Scanning
 
 ```bash
 # Scan a file
@@ -61,9 +50,6 @@ bash scripts/scan_file.sh /path/to/suspicious-file.pdf
 # Scan your entire workspace
 bash scripts/scan_file.sh -r /data/workspace
 
-# Check a URL before visiting
-python3 scripts/scan_url.py "https://sketchy-download.com/agent-skill.tar.gz"
-
 # Audit a skill before installing
 bash scripts/audit_skill.sh /path/to/skill/
 
@@ -71,40 +57,65 @@ bash scripts/audit_skill.sh /path/to/skill/
 bash scripts/host_audit.sh
 ```
 
-That's it. Crusty Security works immediately with ClamAV alone — no API keys required.
+That's it. Crusty Security works immediately with ClamAV — no API keys required.
 
-## Optional: Cloud Scanning
+## How It Works: Skill + Dashboard
 
-For deeper analysis, add these environment variables:
+Crusty Security has two parts that work together — but the skill works great on its own too.
 
-```bash
-# VirusTotal — free at virustotal.com (4 req/min, 500/day)
-export VIRUSTOTAL_API_KEY="your-key-here"
-
-# Google Safe Browsing — free via Google Cloud Console
-export GOOGLE_SAFE_BROWSING_KEY="your-key-here"
+```
+┌─────────────────────────────┐         ┌──────────────────────────────┐
+│   YOUR OPENCLAW AGENT       │         │   CRUSTY SECURITY DASHBOARD  │
+│   (your machine / VPS)      │         │   (crustysecurity.com)       │
+│                             │  HTTPS  │                              │
+│  Crusty Security Skill      │ ──────► │  Web Dashboard               │
+│  ✓ Scans files locally      │  POST   │  ✓ View all scan results     │
+│  ✓ Audits skills            │         │  ✓ Manage alerts & threats   │
+│  ✓ Monitors agent behavior  │         │  ✓ Track agent health        │
+│  ✓ Checks host security     │         │  ✓ Multi-agent fleet view    │
+│                             │         │  ✓ Email/Slack notifications │
+└─────────────────────────────┘         └──────────────────────────────┘
+        runs on YOUR machine               runs at crustysecurity.com
 ```
 
-**Privacy note:** Crusty Security never uploads files to VirusTotal — it only sends SHA256 hashes for lookup. File upload requires explicit `--upload` flag.
+**Key concepts:**
+- The **skill** does all the actual security work — scanning, auditing, monitoring. It runs on your OpenClaw agent's machine.
+- The **dashboard** is a web app where you view results, manage alerts, and monitor multiple agents from one place.
+- Data flows **one way only**: skill → dashboard. The dashboard never connects *to* your agent. Works behind firewalls, NATs, VPNs — no port forwarding needed.
+- The skill is **fully functional without the dashboard**. The dashboard is optional for users who want centralized visibility.
 
-## Optional: Dashboard
+### Connecting Your Agent to the Dashboard (3 steps, 2 minutes)
 
-Connect to [Crusty Security Dashboard](https://crustysecurity.com) for centralized monitoring across multiple agents:
+**Step 1:** Sign up at [crustysecurity.com](https://crustysecurity.com), go to **Agents → + Add Agent**. Your API key is generated automatically — copy it.
 
+**Step 2:** The Agents page shows a full copy-pasteable instruction block. Paste it to your OpenClaw agent, or manually set:
 ```bash
-export CRUSTY_API_KEY="cg_live_xxxxx"
+export CRUSTY_API_KEY="cg_live_xxxxxxxxxxxxxxxxxxxx"
 export CRUSTY_DASHBOARD_URL="https://crustysecurity.com"
-# Backwards compatible: CLAWGUARD_API_KEY and CLAWGUARD_DASHBOARD_URL also work
 ```
 
-The dashboard provides:
-- Real-time agent status and health monitoring
-- Scan history and threat timelines
-- Installed skills inventory with ClawHub version tracking
-- Alert management (email + Slack notifications)
-- Multi-agent fleet overview
+**Step 3:** Restart your OpenClaw agent. It appears in the dashboard within 5 minutes.
 
-The skill is **fully functional without the dashboard** — it's optional for users who want centralized visibility.
+### What works without the dashboard
+
+| Feature | Without Dashboard | With Dashboard |
+|---------|:-:|:-:|
+| File scanning (ClamAV) | ✅ | ✅ + history |
+| Skill auditing | ✅ | ✅ + tracking |
+| Host security audit | ✅ | ✅ + trends |
+| Agent monitoring | ✅ | ✅ + alerts |
+| Quarantine | ✅ | ✅ + remote view |
+| Email/Slack alerts | ❌ | ✅ |
+| Multi-agent fleet view | ❌ | ✅ |
+| Scan scheduling from web | ❌ | ✅ |
+| Security posture score | Local only | ✅ aggregated |
+
+### For OpenClaw agents (reading this as SKILL.md)
+
+If you're an OpenClaw agent and your human has configured `CRUSTY_API_KEY`, you should:
+1. Include `--push` when running scans to send results to the dashboard
+2. The heartbeat runs automatically every 5 minutes when the key is set
+3. Use `python3 scripts/clawhub_sync.py --push` to sync skill inventory to dashboard
 
 ## All Commands
 
@@ -115,10 +126,6 @@ The skill is **fully functional without the dashboard** — it's optional for us
 | `bash scripts/scan_file.sh -r <dir>` | Recursive directory scan |
 | `bash scripts/scan_file.sh --incremental -r <dir>` | Skip unchanged files |
 | `bash scripts/scan_file.sh --quarantine <path>` | Quarantine a file |
-| `python3 scripts/scan_url.py "<url>"` | Check URL safety |
-| `python3 scripts/scan_url.py url1 url2 url3` | Batch URL scan |
-| `python3 scripts/scan_vt.py <path>` | VirusTotal hash lookup |
-| `python3 scripts/scan_vt.py --upload <path>` | Upload to VT (explicit only) |
 | `bash scripts/audit_skill.sh <dir>` | Audit a skill for threats |
 | `bash scripts/host_audit.sh` | Host security audit |
 | `bash scripts/host_audit.sh --deep` | Deep host audit (includes file modifications) |
@@ -132,23 +139,11 @@ All commands output JSON. All support `--help`.
 
 ```
                     ┌──────────────────┐
-   File arrives →   │  ClamAV (local)  │  ← Free, instant, 90% coverage
-                    └────────┬─────────┘
-                             │ flagged or escalation requested
-                    ┌────────▼─────────┐
-                    │ VirusTotal (hash) │  ← 70+ engines, hash only
-                    └────────┬─────────┘
-                             │ hash unknown + user consents
-                    ┌────────▼─────────┐
-                    │ VirusTotal (file) │  ← Full analysis, explicit opt-in
+   File arrives →   │  ClamAV (local)  │  ← Free, instant, signature-based detection
                     └──────────────────┘
 ```
 
-For URLs:
-```
-   URL arrives → VirusTotal (70+ engines) + Google Safe Browsing
-                 ↳ auto-resolves shortened URLs (bit.ly, t.co, etc.)
-```
+ClamAV handles zip, rar, 7z, tar, gz archives natively. Encrypted archives are flagged as "unscanned."
 
 ## Skill Auditing — What It Catches
 
@@ -225,21 +220,17 @@ python3 scripts/clawhub_sync.py --push
 - **OS:** Linux (tested on Debian/Ubuntu, works in Docker)
 - **Python:** 3.8+
 - **ClamAV:** Installed via `install_clamav.sh` or manually
-- **Optional:** VirusTotal API key, Google Safe Browsing API key
 - **Disk:** ~300MB for ClamAV signatures
 
 ### Raspberry Pi / Low Memory
 
 - `<2GB RAM`: Runs in on-demand mode (no ClamAV daemon)
-- `<1GB RAM`: Skip ClamAV, use VirusTotal hash lookups + skill auditing + agent monitoring
-- All non-ClamAV tools are lightweight shell/Python scripts
+- `<1GB RAM`: Use skill auditing + agent monitoring (lightweight shell/Python scripts)
 
 ## Environment Variables
 
 | Variable | Default | Required | Description |
 |----------|---------|----------|-------------|
-| `VIRUSTOTAL_API_KEY` | — | No | VirusTotal API key for deep scanning |
-| `GOOGLE_SAFE_BROWSING_KEY` | — | No | Google Safe Browsing API key |
 | `CRUSTY_API_KEY` | — | No | Dashboard API key (from crustysecurity.com) |
 | `CRUSTY_DASHBOARD_URL` | — | No | Dashboard URL |
 | `CLAWGUARD_QUARANTINE` | `/tmp/clawguard_quarantine` | No | Quarantine directory |
@@ -258,8 +249,6 @@ clawguard/
 ├── scripts/
 │   ├── install_clamav.sh     # ClamAV installer
 │   ├── scan_file.sh          # File/directory scanner
-│   ├── scan_url.py           # URL safety checker
-│   ├── scan_vt.py            # VirusTotal integration
 │   ├── audit_skill.sh        # Skill static analysis
 │   ├── host_audit.sh         # Host security audit
 │   ├── monitor_agent.sh      # Agent behavior monitoring
@@ -282,8 +271,6 @@ Crusty Security works fully offline with reduced capability:
 | Skill auditing | ✅ (static analysis) | ✅ |
 | Host auditing | ✅ | ✅ |
 | Agent monitoring | ✅ | ✅ |
-| VirusTotal | ❌ queued | ✅ |
-| Safe Browsing | ❌ | ✅ |
 | ClawHub sync | ❌ | ✅ |
 
 ## Contributing

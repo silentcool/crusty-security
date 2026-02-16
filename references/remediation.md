@@ -4,11 +4,11 @@
 
 | Severity | Detection Signal | Immediate Action |
 |----------|-----------------|------------------|
-| **False Positive** | ClamAV only, VT 0-2 engines | Verify, whitelist if safe |
-| **Low** | VT <10% engines | Quarantine, monitor |
-| **Medium** | VT 10-30% engines | Quarantine, investigate origin |
-| **High** | VT 30-60% engines, or skill audit critical | Quarantine, check for compromise |
-| **Critical** | VT >60% engines, active compromise indicators | Quarantine, full incident response |
+| **False Positive** | ClamAV detection, known safe source | Verify, whitelist if safe |
+| **Low** | ClamAV detection, unknown source | Quarantine, monitor |
+| **Medium** | ClamAV detection + suspicious origin | Quarantine, investigate origin |
+| **High** | ClamAV detection + skill audit critical findings | Quarantine, check for compromise |
+| **Critical** | Multiple detections, active compromise indicators | Quarantine, full incident response |
 
 ## Step 1: Immediate Containment
 
@@ -26,9 +26,6 @@ iptables -A OUTPUT -d <suspicious_ip> -j DROP
 ## Step 2: Verify the Threat
 
 ```bash
-# Cross-reference with VirusTotal
-python3 scripts/scan_vt.py /path/to/file
-
 # Check agent integrity
 bash scripts/monitor_agent.sh
 
@@ -36,11 +33,10 @@ bash scripts/monitor_agent.sh
 bash scripts/host_audit.sh --deep
 ```
 
-**Interpreting VirusTotal results:**
-- 0 detections = clean (ClamAV false positive)
-- 1-3 detections = likely false positive
-- 5+ detections = probably malicious
-- 15+ detections = confirmed malicious
+**Interpreting ClamAV results:**
+- Single detection from known safe source = likely false positive
+- Detection + suspicious file origin = treat as real threat
+- Detection + skill audit findings = confirmed threat
 
 ## Step 3: Assess Scope
 
@@ -103,7 +99,7 @@ bash scripts/monitor_agent.sh --hours 1
 
 If compromise is confirmed or suspected:
 
-- [ ] API keys: VirusTotal, OpenAI, Anthropic, Google, any service keys
+- [ ] API keys: OpenAI, Anthropic, Google, any service keys
 - [ ] SSH keys: generate new, revoke old authorized_keys entries
 - [ ] Database passwords
 - [ ] Service tokens (Slack, Discord, Telegram bots)
@@ -182,8 +178,7 @@ If a malicious OpenClaw skill is found:
 
 ## False Positive Handling
 
-1. Check VirusTotal — if only ClamAV detects it, likely false positive
-2. Check the file's origin (known source = lower risk)
-3. Submit to ClamAV: https://www.clamav.net/reports/fp
-4. Add to local allowlist if confirmed safe
-5. Document the false positive for future reference
+1. Check the file's origin (known source = lower risk)
+2. Submit to ClamAV: https://www.clamav.net/reports/fp
+3. Add to local allowlist if confirmed safe
+4. Document the false positive for future reference

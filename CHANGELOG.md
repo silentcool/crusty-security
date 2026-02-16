@@ -1,10 +1,25 @@
 # Changelog
 
+## [1.1.1] — 2026-02-16
+
+### Changed
+- Removed scan_url.py and scan_vt.py from repo (VirusTotal/Safe Browsing are deferred features)
+- Removed all VirusTotal/Safe Browsing references from docs, setup.sh, and generate_report.sh
+- Fixed setup.md to lead with `bash setup.sh` (ClamAV installs automatically)
+- Fixed ClawHub slug to `crusty-security`
+- Added dashboard connection docs, comparison table, and architecture diagram to README
+- Simplified scanning stack documentation to ClamAV-only
+
+## [1.1.0] — 2026-02-16
+
+### Changed
+- Scanning stack simplified to ClamAV local scanning only
+- Updated all documentation, environment variables, and command tables
+
 ## [1.0.0] — 2026-02-14
 
 ### Added
-- File scanning with ClamAV (local) + VirusTotal (hash lookup + optional upload)
-- URL scanning with VirusTotal + Google Safe Browsing
+- File scanning with ClamAV (local)
 - Skill auditing — static analysis for supply chain attacks (reverse shells, crypto miners, data exfiltration, obfuscation)
 - Host security audit with posture scoring (0-100)
 - Agent behavior monitoring (config tampering, suspicious processes, outbound connections)

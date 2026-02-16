@@ -146,10 +146,7 @@ else
 "
 fi
 
-if [[ -z "${VIRUSTOTAL_API_KEY:-}" ]]; then
-    REPORT+="- 💡 Set \`VIRUSTOTAL_API_KEY\` for cloud-based scanning.
-"
-fi
+# (VirusTotal removed — ClamAV only)
 
 REPORT+="
 ---
