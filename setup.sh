@@ -13,7 +13,7 @@ echo -e "${GREEN}🦀 Crusty Security — Setup${NC}"
 echo ""
 
 # Auto-detect workspace
-SCAN_DIR="${CRUSTY_WORKSPACE:-}"
+SCAN_DIR="${CLAWGUARD_WORKSPACE:-}"
 [[ -z "$SCAN_DIR" && -d "/data/workspace" ]] && SCAN_DIR="/data/workspace"
 [[ -z "$SCAN_DIR" && -d "$HOME/clawd" ]] && SCAN_DIR="$HOME/clawd"
 [[ -z "$SCAN_DIR" && -d "$HOME/.openclaw" ]] && SCAN_DIR="$HOME/.openclaw"
@@ -73,7 +73,7 @@ chmod +x "$SCRIPT_DIR"/scripts/*.sh "$SCRIPT_DIR"/scripts/*.py 2>/dev/null || tr
 echo -e "  ✅ Scripts ready"
 
 # 4. Create data directories
-mkdir -p /tmp/crusty_logs /tmp/crusty_quarantine /tmp/crusty_data 2>/dev/null || true
+mkdir -p /tmp/clawguard_logs /tmp/clawguard_quarantine /tmp/clawguard_data 2>/dev/null || true
 echo -e "  ✅ Data directories created"
 
 # 5. Quick verification scan
@@ -168,16 +168,15 @@ else
   echo "  To connect to the dashboard: export CRUSTY_API_KEY=cg_live_..."
 fi
 
-# 7. Check scheduled scan crons
+# 7. (Replaced — cron jobs now auto-installed in step 8)
+
+# 8. Auto-install cron jobs via OpenClaw CLI
 echo ""
-echo -e "  ${YELLOW}⏰ Checking scheduled scans...${NC}"
-CRON_CHECK=$(bash "$SCRIPT_DIR/scripts/check_crons.sh" 2>/dev/null || echo '{"all_configured":false,"missing_count":-1}')
-if echo "$CRON_CHECK" | grep -q '"all_configured":true'; then
-  echo -e "  ✅ All scheduled scans configured"
+echo -e "  ${YELLOW}⏰ Installing scheduled scan cron jobs...${NC}"
+if bash "$SCRIPT_DIR/scripts/install_crons.sh" 2>&1; then
+  echo -e "  ✅ Cron jobs installed"
 else
-  MISSING_COUNT=$(echo "$CRON_CHECK" | grep -oE '"missing_count":[0-9]+' | grep -oE '[0-9]+' || echo "?")
-  echo -e "  ${YELLOW}⚠️  ${MISSING_COUNT} scheduled scan(s) not yet configured${NC}"
-  echo -e "  ${YELLOW}    Agent: create missing crons using the OpenClaw cron tool. See SKILL.md.${NC}"
+  echo -e "  ${YELLOW}⚠️  Cron job installation had errors (see above)${NC}"
 fi
 
 echo ""
