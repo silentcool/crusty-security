@@ -73,14 +73,13 @@ create_job() {
 SCAN_DIR="${CLAWGUARD_WORKSPACE:-/data/workspace}"
 ERRORS=0
 
-# 1. Heartbeat (every hour) — only if CRUSTY_API_KEY is available
-#    Sends agent status to the Crusty Security dashboard
+# 1. Heartbeat (every hour) — sends agent status to the Crusty Security dashboard
 create_job \
   "crusty-heartbeat" \
   "0 * * * *" \
   "main" \
   "--system-event" \
-  "Run Crusty Security hourly heartbeat: bash ${SKILL_DIR}/scripts/dashboard.sh heartbeat 2>/dev/null || true" \
+  "You have Crusty Security installed at ${SKILL_DIR}. Use your bash/exec tool to run: bash ${SKILL_DIR}/scripts/dashboard.sh heartbeat. Summarize the JSON output briefly. If it fails, report the error. No user interaction needed. This is an automated scan." \
   "30000" || ((ERRORS++))
 
 # 2. Daily scan (3 AM UTC) — incremental workspace scan + agent monitor
@@ -89,16 +88,16 @@ create_job \
   "0 3 * * *" \
   "main" \
   "--system-event" \
-  "Run Crusty Security daily scan: bash ${SKILL_DIR}/scripts/scan_file.sh --incremental -r ${SCAN_DIR} && bash ${SKILL_DIR}/scripts/monitor_agent.sh" \
+  "You have Crusty Security installed at ${SKILL_DIR}. Use your bash/exec tool to run: bash ${SKILL_DIR}/scripts/scan_file.sh --incremental -r ${SCAN_DIR} && bash ${SKILL_DIR}/scripts/monitor_agent.sh. Summarize the JSON output briefly. If it fails, report the error. No user interaction needed. This is an automated scan." \
   "120000" || ((ERRORS++))
 
-# 3. Weekly full scan (Sunday 3 AM UTC) — full scan + host audit + skill audits + report
+# 3. Weekly full scan (Sunday 3 AM UTC) — full scan + host audit + report
 create_job \
   "crusty-weekly-full" \
   "0 3 * * 0" \
   "main" \
   "--system-event" \
-  "Run Crusty Security weekly full scan: bash ${SKILL_DIR}/scripts/scan_file.sh -r ${SCAN_DIR} && bash ${SKILL_DIR}/scripts/host_audit.sh && bash ${SKILL_DIR}/scripts/generate_report.sh --output /tmp/clawguard_logs/weekly_report.md" \
+  "You have Crusty Security installed at ${SKILL_DIR}. Use your bash/exec tool to run: bash ${SKILL_DIR}/scripts/scan_file.sh -r ${SCAN_DIR} && bash ${SKILL_DIR}/scripts/host_audit.sh && bash ${SKILL_DIR}/scripts/generate_report.sh --output /tmp/clawguard_logs/weekly_report.md. Summarize the JSON output briefly. If it fails, report the error. No user interaction needed. This is an automated scan." \
   "300000" || ((ERRORS++))
 
 # 4. Monthly deep audit (1st of month, 4 AM UTC)
@@ -107,7 +106,7 @@ create_job \
   "0 4 1 * *" \
   "main" \
   "--system-event" \
-  "Run Crusty Security monthly deep audit: bash ${SKILL_DIR}/scripts/host_audit.sh --deep" \
+  "You have Crusty Security installed at ${SKILL_DIR}. Use your bash/exec tool to run: bash ${SKILL_DIR}/scripts/host_audit.sh --deep. Summarize the JSON output briefly. If it fails, report the error. No user interaction needed. This is an automated scan." \
   "300000" || ((ERRORS++))
 
 echo ""
